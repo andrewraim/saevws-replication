@@ -1,0 +1,22 @@
+Package: saevws
+Title: Self-Tuned VWS within Gibbs for You (2021) Model
+Version: 0.1.0
+Authors@R: c(
+    person("Andrew", "Raim", , "andrew.raim@gmail.com", role = c("aut", "cre")),
+    person("Kyle", "Irimata", , "k.irimata90@gmail.com", role = c("aut")),
+    person("James", "Livsey", , "james.a.livsey@gmail.com", role = c("aut")))
+Description: What the package does (one paragraph).
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+LinkingTo: 
+	fntl,
+	Rcpp,
+	RcppArmadillo,
+	vws
+Imports:
+	ggplot2,
+	mcmcse,
+	Rcpp,
+	vws
