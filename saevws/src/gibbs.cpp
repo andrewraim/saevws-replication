@@ -36,8 +36,8 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 	const Rcpp::List& vws_ctrl = control["vws"];
 	const Rcpp::String& vws_method = vws_ctrl["method"];
 	unsigned int max_rejects = vws_ctrl["max_rejects"];
-	double tol1 = vws_ctrl["tol1"];
-	double tol2 = vws_ctrl["tol2"];
+	double tol_suff = vws_ctrl["tol_suff"];
+	double tol_merge = vws_ctrl["tol_merge"];
 	unsigned int N = vws_ctrl["N"];
 
 	unsigned int rep_keep = 0;
@@ -186,14 +186,14 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 			} else if (strcmp(vws_method.get_cstring(), "vws-tune") == 0) {
 				// Self-tuned VWS
 				const VWSStepOutput& vws_out = vws_step_tune(proposals,
-					Zgamma, tau, kappa, lambda, max_rejects, tol1, tol2);
+					Zgamma, tau, kappa, lambda, max_rejects, tol_suff, tol_merge);
 				sigma2 = vws_out.sigma2;
 				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
 				sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
 			} else if (strcmp(vws_method.get_cstring(), "vws-basic") == 0) {
 				// VWS without tuning
 				const VWSStepOutput& vws_out = vws_step_basic(Zgamma, tau,
-					kappa, lambda, N, tol1, max_rejects);
+					kappa, lambda, N, tol_suff, max_rejects);
 				sigma2 = vws_out.sigma2;
 				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
 				sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);

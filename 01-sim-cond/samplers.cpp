@@ -35,7 +35,7 @@ Rcpp::List r_metro(unsigned int n, double init, double mu, double tau,
 
 // [[Rcpp::export]]
 Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
-	double lambda, double tol1, double tol2, unsigned int max_rejects)
+	double lambda, double tol_suff, double tol_merge, unsigned int max_rejects)
 {
 	auto st = std::chrono::system_clock::now();
 
@@ -57,7 +57,7 @@ Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 
 	for (unsigned int i = 0; i < n; i++) {
 		const VWSStepOutput& vws_out = vws_step_tune(proposals, mu_vec,
-			tau, kappa_vec, lambda_vec, max_rejects, tol1, tol2);
+			tau, kappa_vec, lambda_vec, max_rejects, tol_suff, tol_merge);
 		draws(i) = vws_out.sigma2[0];
 		rejections(i) = vws_out.rejects[0];
 		log_bounds(i) = vws_out.log_bound[0];
@@ -80,7 +80,7 @@ Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 
 // [[Rcpp::export]]
 Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
-	double lambda, double tol1, double tol2, unsigned int max_rejects)
+	double lambda, double tol_suff, double tol_merge, unsigned int max_rejects)
 {
 	auto st = std::chrono::system_clock::now();
 
@@ -88,8 +88,8 @@ Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
 	args.max_rejects = max_rejects;
 	args.report = 1e8;
 	args.action = fntl::error_action::STOP;
-	args.tol1 = tol1;
-	args.tol2 = tol2;
+	args.tol_suff = tol_suff;
+	args.tol_merge = tol_merge;
 
 	const vws::dfdb& w = [&](double x, bool log = true) -> double {
 		double out = (x > 0) ? d_invgamma(x, kappa, lambda, true) : R_NegInf;
@@ -131,54 +131,19 @@ Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
 	vws::RealConstRegion supp(0, R_PosInf, w, helper, maxopt, minopt);
 	vws::FMMProposal<double, vws::RealConstRegion> h(supp);
 
-	// TBD: I think we want to start with just one region and use the tuning
-	// from there.
-	// auto lbdd = h.refine(N - 1, tol);
+	// Start with just one region and tune from there.
 	const vws::rejection_result<double>& out = vws::rejection_tune(h, n, args);
-
-	//return Rcpp::List::create(
-	//	Rcpp::Named("draws") = out.draws,
-	//	Rcpp::Named("rejects") = out.rejects,
-	//	Rcpp::Named("lbdd") = lbdd
-	//);
-
-	/*
-	std::vector<ConstSAEMajorizer> proposals = { ConstSAEMajorizer() };
-
-	unsigned int one = 1L;
-	arma::vec mu_vec(one);
-	arma::vec lambda_vec(one);
-	arma::vec kappa_vec(one);
-
-	mu_vec.fill(mu);
-	kappa_vec.fill(kappa);
-	lambda_vec.fill(lambda);
-
-	arma::vec draws(n);
-	arma::vec log_bounds(n);
-	arma::uvec rejections(n);
-	arma::uvec knots(n);
-
-	for (unsigned int i = 0; i < n; i++) {
-		const VWSStepOutput& vws_out = vws_step_tune_v1(proposals, mu_vec,
-			tau, kappa_vec, lambda_vec, max_rejects, tol1, tol2);
-		draws(i) = vws_out.sigma2[0];
-		rejections(i) = vws_out.rejects[0];
-		log_bounds(i) = vws_out.log_bound[0];
-		knots(i) = proposals[0].get_knots().length();
-	}
-	*/
 
 	auto et = std::chrono::system_clock::now();
 	auto td = std::chrono::duration_cast<std::chrono::microseconds>(et - st);
 	auto elapsed = td.count() * SEC_PER_MICROSEC;
 
 	return Rcpp::List::create(
-		Rcpp::Named("draws") = out.draws,        // CHECK
-		Rcpp::Named("log_bounds") = log_bounds,
-		Rcpp::Named("rejections") = out.rejects, // CHECK
-		Rcpp::Named("knots") = knots,
-		Rcpp::Named("elapsed") = elapsed         // CHECK
+		Rcpp::Named("draws") = out.draws,
+		Rcpp::Named("log_bounds") = out.log_bounds,
+		Rcpp::Named("rejections") = out.rejects,
+		Rcpp::Named("regions") = out.regions,
+		Rcpp::Named("elapsed") = elapsed
 	);
 }
 
