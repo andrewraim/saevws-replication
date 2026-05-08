@@ -80,13 +80,14 @@ Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 
 // [[Rcpp::export]]
 Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
-	double lambda, double tol_suff, double tol_merge, unsigned int max_rejects)
+	double lambda, double tol_suff, double tol_merge, unsigned int max_rejects,
+	unsigned int report = 1e8)
 {
 	auto st = std::chrono::system_clock::now();
 
 	vws::rejection_args args;
 	args.max_rejects = max_rejects;
-	args.report = 1e8;
+	args.report = report;
 	args.action = fntl::error_action::STOP;
 	args.tol_suff = tol_suff;
 	args.tol_merge = tol_merge;
@@ -99,31 +100,43 @@ Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
 	fntl::density df = [&](double x, bool log = false) {
 		return R::dlnorm(x, mu, tau, log);
 	};
+
 	fntl::cdf pf = [&](double q, bool lower = true, bool log = false) {
 		return R::plnorm(q, mu, tau, lower, log);
 	};
+
 	fntl::quantile qf = [&](double p, bool lower = true, bool log = false) {
 		return R::qlnorm(p, mu, tau, lower, log);
 	};
 
 	double mode = lambda / (kappa + 1);
 
-	// TBD: we have a simple closed-form max and min that we can use here.
-	vws::optimizer maxopt = [=](const vws::dfdb& w, double lo, double hi, bool log)
+	// We have a simple closed-form max and min that we can use here.
+
+	const vws::optimizer& maxopt =
+	[=](const vws::dfdb& w, double lo, double hi, bool log)
 	{
-		bool ind1 = (mode <= lo);
-		bool ind2 = (mode > hi);
-		double x = ind1*lo + ind2*hi + !(ind1 || ind2)*mode;
-		return d_invgamma(x, kappa, lambda, log);
+		double x = (mode <= lo) ? lo :
+		           (mode > hi) ? hi :
+		           mode;
+		double out = d_invgamma(x, kappa, lambda, log);
+		// Rprintf("maxopt: x=%g lo=%g hi=%g mode=%g out=%g\n",
+		// 	x, lo, hi, mode, out);
+		return out;
 	};
 
-	vws::optimizer minopt = [=](const vws::dfdb& w, double lo, double hi, bool log)
+	const vws::optimizer& minopt =
+	[=](const vws::dfdb& w, double lo, double hi, bool log)
 	{
-		bool ind1 = (mode <= lo);
-		bool ind2 = (mode > hi);
 		double hi_out = d_invgamma(hi, kappa, lambda, true);
 		double lo_out = d_invgamma(lo, kappa, lambda, true);
-		double out = ind1*hi_out + ind2*lo_out + !(ind1 || ind2)*std::min(lo_out, hi_out);
+
+		double out = (mode <= lo) ? hi_out :
+		           (mode > hi) ? lo_out :
+		           std::min(lo_out, hi_out);
+
+		// Rprintf("minopt: lo=%g hi=%g mode=%g lo_out=%g hi_out=%g\n",
+		// 	lo, hi, mode, lo_out, hi_out);
 		return log ? out : exp(out);
 	};
 
