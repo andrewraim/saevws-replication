@@ -24,24 +24,34 @@ inline VWSStepOutput vws_step_basic(const arma::vec& mu, double tau,
 
 	vws::rejection_args args;
 	args.max_rejects = max_rejects;
-	args.max_rejects_action = vws::error_action::STOP;
+	args.action = fntl::error_action::STOP;
 
 	for (unsigned int i = 0; i < m; i++) {
 		if (i % 100 == 0) {
 			Rcpp::checkUserInterrupt();
 		}
 
-		const vws::uv_weight_function& w =
+		const vws::dfdb& w =
 		[&](double x, bool log = true) {
-			// return d_invgamma(x, kappa(i) - 1, lambda(i), log);
 			return d_invgamma(x, kappa(i), lambda(i), log);
 		};
 
+
+		fntl::density df = [&](double x, bool log = false) {
+			return R::dlnorm(x, mu(i), tau, log);
+		};
+		fntl::cdf pf = [&](double q, bool lower = true, bool log = false) {
+			return R::plnorm(q, mu(i), tau, lower, log);
+		};
+		fntl::quantile qf = [&](double p, bool lower = true, bool log = false) {
+			return R::qlnorm(p, mu(i), tau, lower, log);
+		};
+		vws::UnivariateHelper helper(df, pf, qf);
+
 		// Restrict range to something smaller than (0, Inf] to avoid numerical
 		// issues in matrix computation of likelihood.
-		LognormalHelper helper(mu(i), tau);
-		vws::UnivariateConstRegion supp(0, R_PosInf, w, helper);
-		vws::FMMProposal<double, vws::UnivariateConstRegion> h({ supp });
+		vws::RealConstRegion supp(0, R_PosInf, w, helper);
+		vws::FMMProposal<double, vws::RealConstRegion> h({ supp });
 
 		const Rcpp::NumericVector& refine_out = h.refine(N - 1, tol);
 		const vws::rejection_result<double>& vws_out = vws::rejection(h, 1, args);

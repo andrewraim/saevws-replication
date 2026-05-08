@@ -7,7 +7,7 @@
 * Subclass of `LognormalHelper` for the Uniform distribution.
 */
 
-class LognormalHelper : public vws::UnivariateHelper<double>
+class LognormalHelper // : public vws::UnivariateHelper
 {
 public:
 	LognormalHelper(double mean, double sd)

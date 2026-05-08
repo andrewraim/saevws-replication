@@ -1,8 +1,7 @@
 // [[Rcpp::depends(saevws, vws, fntl, RcppArmadillo)]]
 #include <RcppArmadillo.h>
 #include <chrono>
-#include "local-util.h"
-#include "vws-step-tune-v1.h"
+#include "saevws.h"
 
 const double SEC_PER_MICROSEC = 1e-6;
 
@@ -18,7 +17,7 @@ Rcpp::List r_metro(unsigned int n, double init, double mu, double tau,
 
 	for (unsigned int i = 0; i < n; i++) {
 		double u = R::runif(0, 1);
-		double z = vws::r_invgamma(kappa, lambda);
+		double z = r_invgamma(kappa, lambda);
 		double log_num = R::dlnorm(z, mu, tau, true);
 		double log_den = R::dlnorm(x, mu, tau, true);
 		double log_ratio = std::min(log_num - log_den, 0.0);
@@ -57,7 +56,7 @@ Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 	arma::uvec knots(n);
 
 	for (unsigned int i = 0; i < n; i++) {
-		const VWSStepOutput& vws_out = vws_step_tune_v1(proposals, mu_vec,
+		const VWSStepOutput& vws_out = vws_step_tune(proposals, mu_vec,
 			tau, kappa_vec, lambda_vec, max_rejects, tol1, tol2);
 		draws(i) = vws_out.sigma2[0];
 		rejections(i) = vws_out.rejects[0];
@@ -87,14 +86,13 @@ Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
 
 	vws::rejection_args args;
 	args.max_rejects = max_rejects;
-	args.report = report;
+	args.report = 1e8;
 	args.action = fntl::error_action::STOP;
+	args.tol1 = tol1;
+	args.tol2 = tol2;
 
 	const vws::dfdb& w = [&](double x, bool log = true) -> double {
-		double out = R_NegInf;
-		if (x > 0) {
-			out = d_invgamma(x, kappa, lambda, true);
-		}
+		double out = (x > 0) ? d_invgamma(x, kappa, lambda, true) : R_NegInf;
 		return log ? out : std::exp(out);
 	};
 
@@ -136,7 +134,7 @@ Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
 	// TBD: I think we want to start with just one region and use the tuning
 	// from there.
 	// auto lbdd = h.refine(N - 1, tol);
-	const vws::rejection_result<double>& out = vws::rejection_tune(h, n, args, tol1, tol2);
+	const vws::rejection_result<double>& out = vws::rejection_tune(h, n, args);
 
 	//return Rcpp::List::create(
 	//	Rcpp::Named("draws") = out.draws,
@@ -176,7 +174,7 @@ Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
 	auto elapsed = td.count() * SEC_PER_MICROSEC;
 
 	return Rcpp::List::create(
-		Rcpp::Named("draws") = out.draws,
+		Rcpp::Named("draws") = out.draws,        // CHECK
 		Rcpp::Named("log_bounds") = log_bounds,
 		Rcpp::Named("rejections") = out.rejects, // CHECK
 		Rcpp::Named("knots") = knots,

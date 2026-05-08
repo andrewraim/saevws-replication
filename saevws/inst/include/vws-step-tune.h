@@ -37,7 +37,7 @@ inline VWSStepOutput vws_step_tune(std::vector<ConstSAEMajorizer>& proposals,
 		bool accept = false;
 		while (!accept && out.rejects(i) < max_rejects)
 		{
-			const vws::uv_weight_function& w =
+			const vws::dfdb& w =
 			[&](double x, bool log = true) {
 				return d_invgamma(x, kappa(i), lambda(i), log);
 			};

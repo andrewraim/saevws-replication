@@ -95,10 +95,10 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 		if ((rep + 1) % report == 0) {
 			if (strcmp(vws_method.get_cstring(), "vws-tune") == 0)
 			{
-	        	vws::logger("Starting rep %d with avg sigma2 knots %g\n",
+	        	logger("Starting rep %d with avg sigma2 knots %g\n",
 	        		rep + 1, avg_sigma2_knots);
 			} else {
-	        	vws::logger("Starting rep %d\n", rep + 1);
+	        	logger("Starting rep %d\n", rep + 1);
 			}
 		}
 

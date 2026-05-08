@@ -19,7 +19,6 @@ inline void stopifnot(bool cond, const char* fmt, ...)
 	Rcpp::stop(std::string(msg) + " is not TRUE");
 }
 
-/*
 inline void logger(const char* fmt, ...)
 {
 	const Rcpp::Datetime& dt = Rcpp::Datetime(time(NULL));
@@ -35,7 +34,6 @@ inline void logger(const char* fmt, ...)
 	Rprintf("%04d:%02d:%02d %02d:%02d:%02d - %s", dt.getYear(), dt.getMonth(),
 		dt.getDay(), dt.getHours(), dt.getMinutes(), dt.getSeconds(), msg);
 }
-*/
 
 inline arma::mat crossprod(const arma::mat& X)
 {
