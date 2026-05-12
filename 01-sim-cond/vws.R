@@ -46,7 +46,7 @@ for (s in seq_len(S)) {
 		out = r_target(n, mu, tau, kappa, lambda, tol1, tol2, max_rejects)
 		et = Sys.time()
 		res_lb[r,] = out$log_bounds
-		res_knots[r,] = out$knots
+		res_knots[r,] = out$regions
 		res_elapsed[r] = as.numeric(et - st, units = "secs")
 		res_rejections[r] = sum(out$rejections)
 	}

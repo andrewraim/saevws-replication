@@ -34,7 +34,7 @@ Rcpp::List r_metro(unsigned int n, double init, double mu, double tau,
 }
 
 // [[Rcpp::export]]
-Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
+Rcpp::List r_target_old(unsigned int n, double mu, double tau, double kappa,
 	double lambda, double tol_suff, double tol_merge, unsigned int max_rejects)
 {
 	auto st = std::chrono::system_clock::now();
@@ -72,14 +72,14 @@ Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 		Rcpp::Named("draws") = draws,
 		Rcpp::Named("log_bounds") = log_bounds,
 		Rcpp::Named("rejections") = rejections,
-		Rcpp::Named("knots") = knots,
+		Rcpp::Named("regions") = knots,
 		Rcpp::Named("elapsed") = elapsed
 	);
 }
 
 
 // [[Rcpp::export]]
-Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
+Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 	double lambda, double tol_suff, double tol_merge, unsigned int max_rejects,
 	unsigned int report = 1e8)
 {
