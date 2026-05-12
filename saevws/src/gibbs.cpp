@@ -2,6 +2,7 @@
 #include <chrono>
 #include "local-util.h"
 #include "VWSStepOutput.h"
+#include "sae-proposal.h"
 #include "vws-step-basic.h"
 #include "vws-step-tune.h"
 
@@ -38,7 +39,7 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 	unsigned int max_rejects = vws_ctrl["max_rejects"];
 	double tol_suff = vws_ctrl["tol_suff"];
 	double tol_merge = vws_ctrl["tol_merge"];
-	unsigned int N = vws_ctrl["N"];
+	// unsigned int N = vws_ctrl["N"];
 
 	unsigned int rep_keep = 0;
 	unsigned int R_keep = std::ceil((R - burn) / double(thin));
@@ -56,12 +57,12 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 	arma::uvec sigma2_knot_updates_hist(R);
 	double avg_sigma2_knots = 0;
 
-	// This is only used if vws_method == "vws-tune"
-	std::vector<ConstSAEMajorizer> proposals;
-	for (unsigned int i = 0; i < m; i++) {
-		ConstSAEMajorizer maj;
-		proposals.push_back(maj);
-	}
+	// This is used if vws_method == "vws-tune" or vws_method == "vws-basic"
+    vws::rejection_args args;
+    args.max_rejects = max_rejects;
+    args.report = 1e6;
+	args.tol_suff = tol_suff;
+	args.tol_merge = tol_merge;
 
 	// Set up initial values
 	stopifnot(init.inherits("gibbs_init"), "init inherits from gibbs_init");
@@ -72,9 +73,20 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 	double tau2 = init["tau2"];
 	double phi2 = init["phi2"];
 
-	double tau = std::sqrt(tau2);
 	arma::vec Xbeta = X * beta;
 	arma::vec Zgamma = Z * gamma;
+
+	arma::vec kappa = (df - 1) / 2.0;
+	arma::vec lambda = arma::pow(y - theta, 2) / 2.0 + df % s2 / 2.0;
+	arma::vec tau(m);
+	tau.fill(std::sqrt(tau2));
+
+	// This is only used if vws_method == "vws-tune"
+	std::vector<SAEProposal> proposals;
+	for (unsigned int i = 0; i < m; i++) {
+		SAEProposal x(Zgamma(i), tau(i), kappa(i), lambda(i));
+		proposals.push_back(x);
+	}
 
 	// Set up fixed parameters
 	stopifnot(fixed.inherits("gibbs_fixed"), "fixed inherits from gibbs_fixed");
@@ -155,7 +167,7 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 			double aa = m/2.0 - 1;
 			double bb = 1/2.0 * dot(log(sigma2) - Zgamma);
 			tau2 = r_invgamma(aa, bb);
-			tau = std::sqrt(tau2);
+			tau.fill(std::sqrt(tau2));
 			auto et = std::chrono::system_clock::now();
 			auto td = std::chrono::duration_cast<std::chrono::microseconds>(et - st);
 			elapsed_tau2 += td.count() * SEC_PER_MICROSEC;
@@ -164,10 +176,9 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 		// Draw [sigma2 | rest]
 		if (!fixed["sigma2"]) {
 			auto st = std::chrono::system_clock::now();
-			const arma::vec& kappa = (df - 1) / 2.0;
-			const arma::vec& lambda = arma::pow(y - theta, 2) / 2.0 + df % s2 / 2.0;
-			arma::vec tau_vec(m);
-			tau_vec.fill(tau);
+			kappa = (df - 1) / 2.0;
+			lambda = arma::pow(y - theta, 2) / 2.0 + df % s2 / 2.0;
+
 
 			if (strcmp(vws_method.get_cstring(), "imh") == 0) {
 				// Independent Metropolis sampling step from You (2021)
@@ -176,8 +187,8 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 				for (unsigned int i = 0; i < m; i++) {
 					sigma2_prop(i) = r_invgamma(kappa(i), lambda(i));
 				}
-				const arma::vec& log_num = dlnorm(sigma2_prop, Zgamma, tau_vec, true);
-				const arma::vec& log_den = dlnorm(sigma2, Zgamma, tau_vec, true);
+				const arma::vec& log_num = dlnorm(sigma2_prop, Zgamma, tau, true);
+				const arma::vec& log_den = dlnorm(sigma2, Zgamma, tau, true);
 				const arma::vec& log_ratio = arma::min(log_num - log_den, arma::zeros(m));
 				const arma::uvec& idx = arma::find(arma::log(u) < log_ratio);
 				sigma2(idx) = sigma2_prop.elem(idx);
@@ -185,18 +196,34 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 				sigma2_knot_updates_hist(rep) = 0;
 			} else if (strcmp(vws_method.get_cstring(), "vws-tune") == 0) {
 				// Self-tuned VWS
-				const VWSStepOutput& vws_out = vws_step_tune(proposals,
-					Zgamma, tau, kappa, lambda, max_rejects, tol_suff, tol_merge);
-				sigma2 = vws_out.sigma2;
-				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
-				sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
+				for (unsigned int i = 0; i < m; i++) {
+					proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
+			    	const auto& vws_out = vws::rejection_tune(proposals[i], 1, args);
+					sigma2 = vws_out.draws[0];
+					sigma2_rejections_hist(rep) += vws_out.rejects[0];
+					sigma2_knot_updates_hist(rep) += vws_out.tunes[0];
+				}
+
+				// const VWSStepOutput& vws_out = vws_step_tune(proposals,
+				// 	Zgamma, tau, kappa, lambda, max_rejects, tol_suff, tol_merge);
+				// sigma2 = vws_out.sigma2;
+				// sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
+				// sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
 			} else if (strcmp(vws_method.get_cstring(), "vws-basic") == 0) {
 				// VWS without tuning
-				const VWSStepOutput& vws_out = vws_step_basic(Zgamma, tau,
-					kappa, lambda, N, tol_suff, max_rejects);
-				sigma2 = vws_out.sigma2;
-				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
-				sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
+				for (unsigned int i = 0; i < m; i++) {
+					proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
+			    	const auto& vws_out = vws::rejection(proposals[i], 1, args);
+					sigma2 = vws_out.draws[0];
+					sigma2_rejections_hist(rep) += vws_out.rejects[0];
+					sigma2_knot_updates_hist(rep) += vws_out.tunes[0];
+				}
+
+				// const VWSStepOutput& vws_out = vws_step_basic(Zgamma, tau,
+				// 	kappa, lambda, N, tol_suff, max_rejects);
+				// sigma2 = vws_out.sigma2;
+				// sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
+				// sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
 			} else {
 				Rcpp::stop("Unrecognized method in vws_ctrl");
 			}
@@ -208,8 +235,8 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 
 		// Save total number of knots at this point
 		sigma2_knots_hist(rep) = 0;
-		for (unsigned int i = 0; i < proposals.size(); i++) {
-			sigma2_knots_hist(rep) += proposals[i].get_knots().length();
+		for (unsigned int i = 0; i < m; i++) {
+			sigma2_knots_hist(rep) += proposals[i].size();
 		}
 		avg_sigma2_knots = sigma2_knots_hist(rep) / double(m);
 
