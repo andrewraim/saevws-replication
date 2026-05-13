@@ -57,8 +57,7 @@ inline void SAEProposal::update(double mu, double tau, double kappa, double lamb
 	// }
 
 	for (unsigned int i = 0; i < _regions_vec.size(); i++) {
-		_regions_vec[i].set(w);
-		_regions_vec[i].set(helper);
+		_regions_vec[i].set(w, helper);
 	}
 }
 

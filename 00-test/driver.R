@@ -15,7 +15,7 @@ kappa = 10
 tau = 0.5
 
 # Original code
-out1 = r_target(n, mu, tau, kappa, lambda, tol_suff, tol_merge, max_rejects)
+out1 = r_target_old(n, mu, tau, kappa, lambda, tol_suff, tol_merge, max_rejects)
 
 hist(out1$draws)
 out1$knots
@@ -24,7 +24,7 @@ out1$rejections
 out1$elapsed
 
 # New code that uses vws package
-out2 = r_target_new(n, mu, tau, kappa, lambda, tol_suff, tol_merge, max_rejects, report = 1000)
+out2 = r_target(n, mu, tau, kappa, lambda, tol_suff, tol_merge, max_rejects, report = 1000)
 
 hist(out2$draws)
 out2$knots
