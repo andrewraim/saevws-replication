@@ -117,26 +117,19 @@ Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 	[=](const vws::dfdb& w, double lo, double hi, bool log)
 	{
 		double x = (mode <= lo) ? lo :
-		           (mode > hi) ? hi :
-		           mode;
-		double out = d_invgamma(x, kappa, lambda, log);
-		// Rprintf("maxopt: x=%g lo=%g hi=%g mode=%g out=%g\n",
-		// 	x, lo, hi, mode, out);
-		return out;
+			(mode > hi) ? hi :
+			mode;
+		return w(x, true);
 	};
 
 	const vws::optimizer& minopt =
 	[=](const vws::dfdb& w, double lo, double hi, bool log)
 	{
-		double hi_out = d_invgamma(hi, kappa, lambda, true);
-		double lo_out = d_invgamma(lo, kappa, lambda, true);
-
+		double hi_out = w(hi, true);
+		double lo_out = w(lo, true);
 		double out = (mode <= lo) ? hi_out :
-		           (mode > hi) ? lo_out :
-		           std::min(lo_out, hi_out);
-
-		// Rprintf("minopt: lo=%g hi=%g mode=%g lo_out=%g hi_out=%g\n",
-		// 	lo, hi, mode, lo_out, hi_out);
+			(mode > hi) ? lo_out :
+			std::min(lo_out, hi_out);
 		return log ? out : exp(out);
 	};
 
@@ -159,4 +152,3 @@ Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 		Rcpp::Named("elapsed") = elapsed
 	);
 }
-

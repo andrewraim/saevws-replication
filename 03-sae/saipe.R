@@ -13,8 +13,8 @@ probs = c(0.000, 0.010, 0.025)
 alpha = 0.10
 
 # Args for VWG
-tol1 = 0.85
-tol2 = 0.0001
+tol_suff = 0.85
+tol_merge = 0.0001
 
 # ----- Data setup -----
 ff = file.path("..", "data", "saipe.csv")
@@ -47,8 +47,8 @@ init = get_init(m, d1, d2, beta = beta_init, gamma = gamma_init, sigma2 = s2,
 	phi2 = phi2_init, tau2 = tau2_init)
 
 # ----- Self-tuned VWS within Gibbs (Version 1) -----
-vws_ctrl = get_vws_control(tol1 = tol1, tol2 = tol2, max_rejects = 1e6,
-	method = "vws-tune", N = 50)
+vws_ctrl = get_vws_control(tol_suff = tol_suff, tol_merge = tol_merge,
+	max_rejects = 1e6, method = "vws-tune", N = 50)
 control = get_gibbs_control(R = 3000, burn = 1000, thin = 1, report = 100,
 	vws = vws_ctrl, save_latent = seq_len(m))
 fixed = get_fixed()
