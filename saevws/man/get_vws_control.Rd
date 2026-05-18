@@ -5,17 +5,17 @@
 \title{Gibbs Sampler VWS Control}
 \usage{
 get_vws_control(
-  tol1 = 0.01,
-  tol2 = exp(-100),
+  tol_suff = 0.01,
+  tol_merge = exp(-100),
   max_rejects = 1e+06,
   method = c("vws-tune", "vws-basic", "imh"),
   N = 50
 )
 }
 \arguments{
-\item{tol1}{The tolerance \eqn{\epsilon_1}.}
+\item{tol_suff}{The tolerance \eqn{\epsilon_1}.}
 
-\item{tol2}{The tolerance \eqn{\epsilon_2}.}
+\item{tol_merge}{The tolerance \eqn{\epsilon_2}.}
 
 \item{max_rejects}{Maximum number of rejections allowed per \eqn{\sigma_i^2}
 conditional per Gibbs step. The sampler halts when this is exceeded.}

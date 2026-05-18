@@ -39,7 +39,7 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 	unsigned int max_rejects = vws_ctrl["max_rejects"];
 	double tol_suff = vws_ctrl["tol_suff"];
 	double tol_merge = vws_ctrl["tol_merge"];
-	// unsigned int N = vws_ctrl["N"];
+	unsigned int N = vws_ctrl["N"];
 
 	unsigned int rep_keep = 0;
 	unsigned int R_keep = std::ceil((R - burn) / double(thin));
@@ -55,6 +55,8 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 	arma::uvec sigma2_rejections_hist(R);
 	arma::uvec sigma2_knots_hist(R);
 	arma::uvec sigma2_knot_updates_hist(R);
+	arma::uvec sigma2_rejections_areas(m);
+	sigma2_rejections_areas.fill(0);
 	double avg_sigma2_knots = 0;
 
 	// This is used if vws_method == "vws-tune" or vws_method == "vws-basic"
@@ -82,10 +84,17 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 	tau.fill(std::sqrt(tau2));
 
 	// This is only used if vws_method == "vws-tune"
-	std::vector<SAEProposal> proposals;
+	// std::vector<SAEProposal> proposals;
+	// for (unsigned int i = 0; i < m; i++) {
+	// 	SAEProposal x(Zgamma(i), tau(i), kappa(i), lambda(i));
+	// 	proposals.push_back(x);
+	// }
+
+	// This is only used if vws_method == "vws-tune"
+	std::vector<ConstSAEMajorizer> proposals;
 	for (unsigned int i = 0; i < m; i++) {
-		SAEProposal x(Zgamma(i), tau(i), kappa(i), lambda(i));
-		proposals.push_back(x);
+		ConstSAEMajorizer maj;
+		proposals.push_back(maj);
 	}
 
 	// Set up fixed parameters
@@ -179,7 +188,6 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 			kappa = (df - 1) / 2.0;
 			lambda = arma::pow(y - theta, 2) / 2.0 + df % s2 / 2.0;
 
-
 			if (strcmp(vws_method.get_cstring(), "imh") == 0) {
 				// Independent Metropolis sampling step from You (2021)
 				const arma::vec& u = arma::randu(m);
@@ -193,37 +201,41 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 				const arma::uvec& idx = arma::find(arma::log(u) < log_ratio);
 				sigma2(idx) = sigma2_prop.elem(idx);
 				sigma2_rejections_hist(rep) = m - idx.n_elem;
+				sigma2_rejections_areas += (arma::log(u) >= log_ratio);
 				sigma2_knot_updates_hist(rep) = 0;
 			} else if (strcmp(vws_method.get_cstring(), "vws-tune") == 0) {
-				// Self-tuned VWS
-				for (unsigned int i = 0; i < m; i++) {
-					proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
-			    	const auto& vws_out = vws::rejection_tune(proposals[i], 1, args);
-					sigma2 = vws_out.draws[0];
-					sigma2_rejections_hist(rep) += vws_out.rejects[0];
-					sigma2_knot_updates_hist(rep) += vws_out.tunes[0];
-				}
+				// Self-tuned VWS using vws package
+				// for (unsigned int i = 0; i < m; i++) {
+				// 	proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
+			    // 	const auto& vws_out = vws::rejection_tune(proposals[i], 1, args);
+				// 	sigma2 = vws_out.draws[0];
+				// 	sigma2_rejections_hist(rep) += vws_out.rejects[0];
+				// 	sigma2_knot_updates_hist(rep) += vws_out.tunes[0];
+				// }
 
-				// const VWSStepOutput& vws_out = vws_step_tune(proposals,
-				// 	Zgamma, tau, kappa, lambda, max_rejects, tol_suff, tol_merge);
-				// sigma2 = vws_out.sigma2;
-				// sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
-				// sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
+				// Self-tuned VWS using customized implementation
+				const VWSStepOutput& vws_out = vws_step_tune(proposals,
+				 	Zgamma, std::sqrt(tau2), kappa, lambda, max_rejects,
+				 	tol_suff, tol_merge);
+				sigma2 = vws_out.sigma2;
+				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
+				sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
 			} else if (strcmp(vws_method.get_cstring(), "vws-basic") == 0) {
-				// VWS without tuning
-				for (unsigned int i = 0; i < m; i++) {
-					proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
-			    	const auto& vws_out = vws::rejection(proposals[i], 1, args);
-					sigma2 = vws_out.draws[0];
-					sigma2_rejections_hist(rep) += vws_out.rejects[0];
-					sigma2_knot_updates_hist(rep) += vws_out.tunes[0];
-				}
+				// VWS without tuning using vws package
+				// for (unsigned int i = 0; i < m; i++) {
+				// 	proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
+			    // 	const auto& vws_out = vws::rejection(proposals[i], 1, args);
+				// 	sigma2 = vws_out.draws[0];
+				// 	sigma2_rejections_hist(rep) += vws_out.rejects[0];
+				// 	sigma2_knot_updates_hist(rep) += vws_out.tunes[0];
+				// }
 
-				// const VWSStepOutput& vws_out = vws_step_basic(Zgamma, tau,
-				// 	kappa, lambda, N, tol_suff, max_rejects);
-				// sigma2 = vws_out.sigma2;
-				// sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
-				// sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
+				// VWS without tuning using customized implementation
+				const VWSStepOutput& vws_out = vws_step_basic(Zgamma,
+					std::sqrt(tau2), kappa, lambda, N, tol_suff, max_rejects);
+				sigma2 = vws_out.sigma2;
+				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
+				sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
 			} else {
 				Rcpp::stop("Unrecognized method in vws_ctrl");
 			}
@@ -235,8 +247,11 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 
 		// Save total number of knots at this point
 		sigma2_knots_hist(rep) = 0;
-		for (unsigned int i = 0; i < m; i++) {
-			sigma2_knots_hist(rep) += proposals[i].size();
+		// for (unsigned int i = 0; i < m; i++) {
+		// 	sigma2_knots_hist(rep) += proposals[i].size();
+		// }
+		for (unsigned int i = 0; i < proposals.size(); i++) {
+			sigma2_knots_hist(rep) += proposals[i].get_knots().length();
 		}
 		avg_sigma2_knots = sigma2_knots_hist(rep) / double(m);
 
@@ -278,6 +293,7 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 		Rcpp::Named("burn") = burn,
 		Rcpp::Named("thin") = thin,
 		Rcpp::Named("sigma2_rejections_hist") = sigma2_rejections_hist,
+		Rcpp::Named("sigma2_rejections_areas") = sigma2_rejections_areas,
 		Rcpp::Named("sigma2_knots_hist") = sigma2_knots_hist,
 		Rcpp::Named("sigma2_knot_updates_hist") = sigma2_knot_updates_hist,
 		Rcpp::Named("m") = m

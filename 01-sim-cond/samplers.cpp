@@ -34,7 +34,7 @@ Rcpp::List r_metro(unsigned int n, double init, double mu, double tau,
 }
 
 // [[Rcpp::export]]
-Rcpp::List r_target_old(unsigned int n, double mu, double tau, double kappa,
+Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 	double lambda, double tol_suff, double tol_merge, unsigned int max_rejects)
 {
 	auto st = std::chrono::system_clock::now();
@@ -52,14 +52,14 @@ Rcpp::List r_target_old(unsigned int n, double mu, double tau, double kappa,
 
 	arma::vec draws(n);
 	arma::vec log_bounds(n);
-	arma::uvec rejections(n);
+	arma::uvec rejects(n);
 	arma::uvec knots(n);
 
 	for (unsigned int i = 0; i < n; i++) {
 		const VWSStepOutput& vws_out = vws_step_tune(proposals, mu_vec,
 			tau, kappa_vec, lambda_vec, max_rejects, tol_suff, tol_merge);
 		draws(i) = vws_out.sigma2[0];
-		rejections(i) = vws_out.rejects[0];
+		rejects(i) = vws_out.rejects[0];
 		log_bounds(i) = vws_out.log_bound[0];
 		knots(i) = proposals[0].get_knots().length();
 	}
@@ -71,15 +71,15 @@ Rcpp::List r_target_old(unsigned int n, double mu, double tau, double kappa,
 	return Rcpp::List::create(
 		Rcpp::Named("draws") = draws,
 		Rcpp::Named("log_bounds") = log_bounds,
-		Rcpp::Named("rejections") = rejections,
-		Rcpp::Named("regions") = knots,
+		Rcpp::Named("rejects") = rejects,
+		Rcpp::Named("regions") = knots + 1,
 		Rcpp::Named("elapsed") = elapsed
 	);
 }
 
 
 // [[Rcpp::export]]
-Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
+Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
 	double lambda, double tol_suff, double tol_merge, unsigned int max_rejects,
 	unsigned int report = 1e8)
 {
@@ -147,7 +147,7 @@ Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 	return Rcpp::List::create(
 		Rcpp::Named("draws") = out.draws,
 		Rcpp::Named("log_bounds") = out.log_bounds,
-		Rcpp::Named("rejections") = out.rejects,
+		Rcpp::Named("rejects") = out.rejects,
 		Rcpp::Named("regions") = out.regions,
 		Rcpp::Named("elapsed") = elapsed
 	);

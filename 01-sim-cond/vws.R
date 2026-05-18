@@ -12,13 +12,13 @@ max_rejects = 1e6
 
 mu = 0
 lambda = 1
-tol1_levels = c(0.75, 0.50)
-tol2_levels = c(0.01, 0.001)
+tol_suff_levels = c(0.75, 0.50)
+tol_merge_levels = c(0.01, 0.001)
 kappa_levels = c(10, 50)
 tau_levels = c(0.5, 1.0)
 
-tbl = expand.grid(kappa = kappa_levels, tau = tau_levels, tol1 = tol1_levels,
-		tol2 = tol2_levels)
+tbl = expand.grid(kappa = kappa_levels, tau = tau_levels,
+	tol_suff = tol_suff_levels, tol_merge = tol_merge_levels)
 lb_list = list()
 knots_list = list()
 elapsed_list = list()
@@ -31,8 +31,8 @@ for (s in seq_len(S)) {
 
 	kappa = tbl$kappa[s]
 	tau = tbl$tau[s]
-	tol1 = tbl$tol1[s]
-	tol2 = tbl$tol2[s]
+	tol_suff = tbl$tol_suff[s]
+	tol_merge = tbl$tol_merge[s]
 
 	res_lb = matrix(NA, R, n)
 	res_knots = matrix(NA, R, n)
@@ -43,7 +43,7 @@ for (s in seq_len(S)) {
 
 	for (r in 1:R) {
 		st = Sys.time()
-		out = r_target(n, mu, tau, kappa, lambda, tol1, tol2, max_rejects)
+		out = r_target(n, mu, tau, kappa, lambda, tol_suff, tol_merge, max_rejects)
 		et = Sys.time()
 		res_lb[r,] = out$log_bounds
 		res_knots[r,] = out$regions
@@ -66,7 +66,7 @@ for (s in seq_len(S)) {
 tbl |>
 	add_column(elapsed = unlist(elapsed_list)) |>
 	mutate(par = sprintf("kappa=%g, tau=%g", kappa, tau)) |>
-	mutate(tol = sprintf("tol1=%g, tol2=%g", tol1, tol2)) |>
+	mutate(tol = sprintf("tol_suff=%g, tol_merge=%g", tol_suff, tol_merge)) |>
 	mutate(par = as.factor(par)) |>
 	mutate(tol = as.factor(tol)) |>
 	mutate(elapsed = round(elapsed, 3)) |>
@@ -76,22 +76,22 @@ tbl |>
 tbl |>
 	add_column(rejections = unlist(rejections_list)) |>
 	mutate(par = sprintf("kappa=%g, tau=%g", kappa, tau)) |>
-	mutate(tol = sprintf("tol1=%g, tol2=%g", tol1, tol2)) |>
+	mutate(tol = sprintf("tol_suff=%g, tol_merge=%g", tol_suff, tol_merge)) |>
 	mutate(par = as.factor(par)) |>
 	mutate(tol = as.factor(tol)) |>
 	xtabs(rejections ~ par + tol, data = _)
 
 
 # ----- Make plots of bounds and knots -----
-# Plots are grouped by (tol1, tol2) values. Series within each plot vary with
+# Plots are grouped by (tol_suff, tol_merge) values. Series within each plot vary with
 # (kappa, tau).
-for (idx1 in seq_along(tol1_levels)) {
-for (idx2 in seq_along(tol2_levels)) {
-	tol1 = tol1_levels[idx1]
-	tol2 = tol2_levels[idx2]
+for (idx1 in seq_along(tol_suff_levels)) {
+for (idx2 in seq_along(tol_merge_levels)) {
+	tol_suff = tol_suff_levels[idx1]
+	tol_merge = tol_merge_levels[idx2]
 
 	g1 = ggplot() +
-		geom_hline(yintercept = log(tol1), lty = 2, col = "blue") +
+		geom_hline(yintercept = log(tol_suff), lty = 2, col = "blue") +
 		xlab("Iteration") +
 		ylab("Log of Bound") +
 		scale_y_continuous(n.breaks = 6) +
@@ -109,8 +109,8 @@ for (idx2 in seq_along(tol2_levels)) {
 		kappa = kappa_levels[idx3]
 		tau = tau_levels[idx4]
 		idx_row = which(
-			tbl$tol1 == tol1 &
-			tbl$tol2 == tol2 &
+			tbl$tol_suff == tol_suff &
+			tbl$tol_merge == tol_merge &
 			tbl$kappa == kappa &
 			tbl$tau == tau)
 		ltype = ltype + 1

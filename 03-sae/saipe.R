@@ -76,6 +76,13 @@ fixed = get_fixed()
 mwg_out = gibbs(y, s2, X, Z, df, init, control, fixed)
 print(mwg_out)
 
+# Sort areas by rejection count and plot them against some respective data
+hist(mwg_out$sigma2_rejections_areas)
+idx = order(mwg_out$sigma2_rejections_areas)
+plot(sort(mwg_out$sigma2_rejections_areas), y[idx])
+plot(sort(mwg_out$sigma2_rejections_areas), df[idx])
+plot(sort(mwg_out$sigma2_rejections_areas), s2[idx])
+
 ## Convert any NaN values of ESS (i.e., no chain movement) to zero
 ess_mwg_sigma2 = ess(mwg_out$sigma2_hist)
 ess_mwg_sigma2[is.na(ess_mwg_sigma2)] = 0
