@@ -245,8 +245,8 @@ xtable(summary(vwg_out), digits=3)
 if (FALSE) {
 	# ----- VWS within Gibbs, no self-tuning -----
 	# This takes a while to run, so do it last
-	vws_ctrl = get_vws_control(tol1 = tol1, tol2 = tol2, max_rejects = 1e6,
-		method = "vws-basic", N = 50)
+	vws_ctrl = get_vws_control(tol_suff = tol_suff, tol_merge = tol_merge,
+		max_rejects = 1e6, method = "vws-basic", N = 50)
 	control = get_gibbs_control(R = 3000, burn = 1000, thin = 1, report = 1,
 		vws = vws_ctrl, save_latent = seq_len(m))
 	fixed = get_fixed()
