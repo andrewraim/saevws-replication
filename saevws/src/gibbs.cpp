@@ -5,6 +5,8 @@
 #include "sae-proposal.h"
 #include "vws-step-basic.h"
 #include "vws-step-tune.h"
+#include "arms-functor.h"
+#include "armspp"
 
 const double SEC_PER_MICROSEC = 1e-6;
 
@@ -96,6 +98,13 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 		ConstSAEMajorizer maj;
 		proposals.push_back(maj);
 	}
+
+	// This is only used if vws_method == "arms"
+	std::mt19937_64 rng(static_cast<uint_fast64_t>(UINT_FAST64_MAX * R::unif_rand()));
+	arma::mat arms_quantiles(m, 3);
+	arms_quantiles.col(0).fill(0.1);
+	arms_quantiles.col(1).fill(1);
+	arms_quantiles.col(2).fill(5);
 
 	// Set up fixed parameters
 	stopifnot(fixed.inherits("gibbs_fixed"), "fixed inherits from gibbs_fixed");
@@ -203,6 +212,32 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 				sigma2_rejections_hist(rep) = m - idx.n_elem;
 				sigma2_rejections_areas += (arma::log(u) >= log_ratio);
 				sigma2_knot_updates_hist(rep) = 0;
+			} else if (strcmp(vws_method.get_cstring(), "arms") == 0) {
+				/*
+				 * After sampling, grab a few quantiles from the proposal
+				 * to use in the next round of the Gibbs sampler. This is the
+				 * suggestion in Gilks et al (1992).
+				*/
+				for (unsigned int i = 0; i < m; i++) {
+					const Rcpp::NumericVector& points = Rcpp::wrap(arms_quantiles.row(i));
+					ARMSFunctor armsfun(Zgamma(i), tau(i), kappa(i), lambda(i));
+					armspp::ARMS<double, ARMSFunctor, Rcpp::NumericVector::const_iterator>
+					sigma2_dist(
+						armsfun,  // log-density functor
+						0,        // lower
+						1000,     // upper
+						0,        // convex adjustment
+						points.begin(),
+						points.size(),
+						100,      // max_points
+						true,     // use metropolis or not
+						sigma2(i) // previous value
+					);
+					sigma2(i) = sigma2_dist(rng);
+					arms_quantiles(i,0) = sigma2_dist.envelopeQuantile(0.05);
+					arms_quantiles(i,1) = sigma2_dist.envelopeQuantile(0.50);
+					arms_quantiles(i,2) = sigma2_dist.envelopeQuantile(0.95);
+				}
 			} else if (strcmp(vws_method.get_cstring(), "vws-tune") == 0) {
 				// Self-tuned VWS using vws package
 				// for (unsigned int i = 0; i < m; i++) {

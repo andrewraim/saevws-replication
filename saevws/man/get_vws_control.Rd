@@ -8,7 +8,7 @@ get_vws_control(
   tol_suff = 0.01,
   tol_merge = exp(-100),
   max_rejects = 1e+06,
-  method = c("vws-tune", "vws-basic", "imh"),
+  method = c("vws-tune", "vws-basic", "imh", "arms"),
   N = 50
 )
 }

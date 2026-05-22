@@ -9,7 +9,8 @@ Description: What the package does (one paragraph).
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-LinkingTo: 
+LinkingTo:
+	armspp,
 	fntl,
 	Rcpp,
 	RcppArmadillo,

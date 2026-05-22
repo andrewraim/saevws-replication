@@ -55,6 +55,11 @@ fixed = get_fixed()
 vwg_out = gibbs(y, s2, X, Z, df, init, control, fixed)
 print(vwg_out)
 
+plot(vwg_out$beta_hist[,1], type = "l")
+plot(vwg_out$gamma_hist[,1], type = "l")
+plot(vwg_out$phi2_hist, type = "l")
+plot(vwg_out$tau2_hist, type = "l")
+
 ess_vwg_sigma2 = ess(vwg_out$sigma2_hist)
 ess_vwg_theta = ess(vwg_out$theta_hist)
 quantile(ess_vwg_sigma2, probs)
@@ -67,6 +72,24 @@ multiESS(vwg_out$gamma_hist)
 ess(vwg_out$phi2_hist)
 ess(vwg_out$tau2_hist)
 multiESS(par_vwg_mcmc)
+
+# ----- ARMS within Gibbs -----
+vws_ctrl = get_vws_control(method = "arms")
+control = get_gibbs_control(R = 3000, burn = 1000, thin = 1, report = 100,
+	vws = vws_ctrl, save_latent = seq_len(m))
+fixed = get_fixed()
+arms_out = gibbs(y, s2, X, Z, df, init, control, fixed)
+print(arms_out)
+
+plot(arms_out$beta_hist[,1], type = "l")
+plot(arms_out$gamma_hist[,1], type = "l")
+plot(arms_out$phi2_hist, type = "l")
+plot(arms_out$tau2_hist, type = "l")
+
+ess_arms_sigma2 = ess(arms_out$sigma2_hist)
+ess_arms_theta = ess(arms_out$theta_hist)
+quantile(ess_arms_sigma2, probs)
+quantile(ess_arms_theta, probs)
 
 # ----- Metropolis within Gibbs -----
 vws_ctrl = get_vws_control(method = "imh")
