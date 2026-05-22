@@ -14,7 +14,8 @@ alpha = 0.10
 
 # Args for VWG
 tol_suff = 0.85
-tol_merge = 0.0001
+#tol_merge = 0.0001
+tol_merge = 0.05
 
 # ----- Data setup -----
 ff = file.path("..", "data", "saipe.csv")

@@ -233,7 +233,11 @@ Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2,
 						true,     // use metropolis or not
 						sigma2(i) // previous value
 					);
-					sigma2(i) = sigma2_dist(rng);
+					double sigma2_i = sigma2_dist(rng);
+					bool is_reject = std::fabs(sigma2_i - sigma2(i)) < 1e-8;
+					sigma2(i) = sigma2_i;
+					sigma2_rejections_hist(rep) += is_reject;
+					sigma2_rejections_areas(i) += is_reject;
 					arms_quantiles(i,0) = sigma2_dist.envelopeQuantile(0.05);
 					arms_quantiles(i,1) = sigma2_dist.envelopeQuantile(0.50);
 					arms_quantiles(i,2) = sigma2_dist.envelopeQuantile(0.95);
