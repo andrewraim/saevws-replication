@@ -1,3 +1,5 @@
+library(tidyverse)
+
 Rcpp::sourceCpp("../01-sim-cond/samplers.cpp")
 
 # ----- Data setup -----
@@ -38,6 +40,7 @@ idx = 2655
 
 tol_suff = 0.85
 tol_merge = 1e-4
+max_rejects = 1e6
 
 out1 = r_metro(n = 2000, init = 0, Zgamma[idx], tau, kappa[idx], lambda[idx])
 out2 = r_target(n = 2000, Zgamma[idx], tau, kappa[idx], lambda[idx], tol_suff, tol_merge, max_rejects)

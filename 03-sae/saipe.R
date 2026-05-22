@@ -35,6 +35,8 @@ s2 = dat_saipe$s2
 d1 = ncol(X)
 d2 = ncol(Z)
 
+fixed = fixed_joint()
+
 # ----- Initial values -----
 
 # Pick starting values based on the observed data.
@@ -44,16 +46,15 @@ beta_init = coef(lm1_out)
 gamma_init = coef(lm2_out)
 phi2_init = sigma(lm1_out)^2
 tau2_init = sigma(lm2_out)^2
-init = get_init(m, d1, d2, beta = beta_init, gamma = gamma_init, sigma2 = s2,
+init = init_joint(m, d1, d2, beta = beta_init, gamma = gamma_init, sigma2 = s2,
 	phi2 = phi2_init, tau2 = tau2_init)
 
 # ----- Self-tuned VWS within Gibbs (Version 1) -----
-vws_ctrl = get_vws_control(tol_suff = tol_suff, tol_merge = tol_merge,
+vws_ctrl = control_vws(tol_suff = tol_suff, tol_merge = tol_merge,
 	max_rejects = 1e6, method = "vws-tune", N = 50)
-control = get_gibbs_control(R = 3000, burn = 1000, thin = 1, report = 100,
+control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
 	vws = vws_ctrl, save_latent = seq_len(m))
-fixed = get_fixed()
-vwg_out = gibbs(y, s2, X, Z, df, init, control, fixed)
+vwg_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
 print(vwg_out)
 
 plot(vwg_out$beta_hist[,1], type = "l")
@@ -75,11 +76,10 @@ ess(vwg_out$tau2_hist)
 multiESS(par_vwg_mcmc)
 
 # ----- ARMS within Gibbs -----
-vws_ctrl = get_vws_control(method = "arms")
-control = get_gibbs_control(R = 3000, burn = 1000, thin = 1, report = 100,
+vws_ctrl = control_vws(method = "arms")
+control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
 	vws = vws_ctrl, save_latent = seq_len(m))
-fixed = get_fixed()
-arms_out = gibbs(y, s2, X, Z, df, init, control, fixed)
+arms_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
 print(arms_out)
 
 plot(arms_out$beta_hist[,1], type = "l")
@@ -93,11 +93,10 @@ quantile(ess_arms_sigma2, probs)
 quantile(ess_arms_theta, probs)
 
 # ----- Metropolis within Gibbs -----
-vws_ctrl = get_vws_control(method = "imh")
-control = get_gibbs_control(R = 30000, burn = 28000, thin = 1, report = 1000,
+vws_ctrl = control_vws(method = "imh")
+control = control_joint(R = 30000, burn = 28000, thin = 1, report = 1000,
 	vws = vws_ctrl, save_latent = seq_len(m))
-fixed = get_fixed()
-mwg_out = gibbs(y, s2, X, Z, df, init, control, fixed)
+mwg_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
 print(mwg_out)
 
 # Sort areas by rejection count and plot them against some respective data
@@ -123,12 +122,12 @@ ess(mwg_out$tau2_hist)
 multiESS(par_mwg_mcmc)
 
 # ----- Fit Fay-Herriot with Gibbs sampler -----
-ctrl_fh = get_vws_control(method = "imh")
-control_fh = get_gibbs_control(R = 3000, burn = 1000, thin = 1,
+ctrl_fh = control_vws(method = "imh")
+control_fh = control_joint(R = 3000, burn = 1000, thin = 1,
 	report = 1000, vws = vws_ctrl, save_latent = seq_len(m))
-fixed_fh = get_fixed(gamma = TRUE, tau2 = TRUE, sigma2 = TRUE)
+fixed_fh = fixed_joint(gamma = TRUE, tau2 = TRUE, sigma2 = TRUE)
 
-fh_out = gibbs(y, s2, X, Z, df, init, control, fixed)
+fh_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
 print(fh_out)
 
 # ----- Create some plots from the results -----
@@ -269,12 +268,12 @@ xtable(summary(vwg_out), digits=3)
 if (FALSE) {
 	# ----- VWS within Gibbs, no self-tuning -----
 	# This takes a while to run, so do it last
-	vws_ctrl = get_vws_control(tol_suff = tol_suff, tol_merge = tol_merge,
+	vws_ctrl = control_vws(tol_suff = tol_suff, tol_merge = tol_merge,
 		max_rejects = 1e6, method = "vws-basic", N = 50)
-	control = get_gibbs_control(R = 3000, burn = 1000, thin = 1, report = 1,
+	control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1,
 		vws = vws_ctrl, save_latent = seq_len(m))
-	fixed = get_fixed()
-	vwg_basic_out = gibbs(y, s2, X, Z, df, init, control, fixed)
+	fixed = fixed_joint()
+	vwg_basic_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
 	print(vwg_basic_out)
 
 	ess_vwg_basic_sigma2 = ess(vwg_basic_out$sigma2_hist)

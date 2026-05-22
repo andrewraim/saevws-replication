@@ -3,8 +3,8 @@
 
 #include "local-util.h"
 #include "sae-proposal.h"
-#include "ConstSAEMajorizer.h"
-#include "VWSStepOutput.h"
+#include "const-sae-majorizer.h"
+#include "vws-step-output.h"
 #include "vws-step-basic.h"
 #include "vws-step-tune.h"
 

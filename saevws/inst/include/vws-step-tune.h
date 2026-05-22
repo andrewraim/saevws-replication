@@ -2,8 +2,8 @@
 #define VWS_STEP_TUNE_H
 
 #include <RcppArmadillo.h>
-#include "ConstSAEMajorizer.h"
-#include "VWSStepOutput.h"
+#include "const-sae-majorizer.h"
+#include "vws-step-output.h"
 #include "local-util.h"
 
 /*

@@ -2,11 +2,10 @@
 #define VWS_STEP_BASIC_H
 
 #include <RcppArmadillo.h>
-#include "ConstSAEMajorizer.h"
-#include "VWSStepOutput.h"
-#include "LognormalHelper.h"
+#include "const-sae-majorizer.h"
+#include "vws-step-output.h"
+#include "lognormal-helper.h"
 #include "local-util.h"
-
 
 /*
 * VWS step without tuning.
@@ -35,7 +34,6 @@ inline VWSStepOutput vws_step_basic(const arma::vec& mu, double tau,
 		[&](double x, bool log = true) {
 			return d_invgamma(x, kappa(i), lambda(i), log);
 		};
-
 
 		fntl::density df = [&](double x, bool log = false) {
 			return R::dlnorm(x, mu(i), tau, log);

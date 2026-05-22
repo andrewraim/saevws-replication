@@ -1,9 +1,9 @@
 #ifndef ARMS_FUNCTOR
 #define ARMS_FUNCTOR
 
-class ARMSFunctor {
+class ARMSJointFunctor {
 public:
-	ARMSFunctor(double mu, double tau, double kappa, double lambda)
+	ARMSJointFunctor(double mu, double tau, double kappa, double lambda)
 		: _mu(mu), _tau(tau), _kappa(kappa), _lambda(lambda), _nEvaluations(0)
 	{
 	}
@@ -27,3 +27,4 @@ private:
 };
 
 #endif
+

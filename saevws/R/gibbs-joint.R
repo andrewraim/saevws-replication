@@ -1,30 +1,4 @@
-#' Gibbs Sampler VWS Control
-#'
-#' @param tol_suff The tolerance \eqn{\epsilon_1}.
-#' @param tol_merge The tolerance \eqn{\epsilon_2}.
-#' @param max_rejects Maximum number of rejections allowed per \eqn{\sigma_i^2}
-#' conditional per Gibbs step. The sampler halts when this is exceeded.
-#' @param method Can be independent Metropolis step (`"imh"`), self-tuned VWS
-#' (`"vws-tune"`), or basic VWS without self-tuning (`"vws-basic"`) for the
-#' \eqn{\sigma_i^2} draws.
-#'
-#' @return A list with results.
-#'
-#' @examples
-#' ctrl = get_vws_control()
-#'
-#' @export
-get_vws_control = function(tol_suff = 1e-2, tol_merge = exp(-100),
-	max_rejects = 1e6, method = c("vws-tune", "vws-basic", "imh", "arms"),
-	N = 50)
-{
-	ret = list(tol_suff = tol_suff, tol_merge = tol_merge,
-		max_rejects = max_rejects, method = match.arg(method), N = N)
-	class(ret) = "vws_ctrl"
-	return(ret)
-}
-
-#' Gibbs Sampler VWS Control
+#' Control for Joint Model Gibbs Sampler
 #'
 #' @param R Desired length of MCMC chain.
 #' @param burn Number of draws to burn.
@@ -36,20 +10,20 @@ get_vws_control = function(tol_suff = 1e-2, tol_merge = exp(-100),
 #' \eqn{\vartheta}). Values should be 1-based, corresponding to a subset of
 #' \eqn{\{1, \ldots, m\}}. Default is an empty vector. Saving many observations
 #' over many draws can use a lot of memory.
-#' @param vws An control object obtained from [get_vws_control].
+#' @param sigma2 An control object obtained from [control_sigma2].
 #'
 #' @return A list with results.
 #'
 #' @examples
-#' ctrl = get_gibbs_control()
+#' ctrl = control_joint()
 #'
 #' @export
-get_gibbs_control = function(R = 1000, burn = 0, thin = 1, report = R+1,
-	save_latent = integer(0), vws = get_vws_control())
+control_joint = function(R = 1000, burn = 0, thin = 1, report = R+1,
+	save_latent = integer(0), sigma2 = control_sigma2())
 {
 	ret = list(R = R, burn = burn, thin = thin, report = report,
-		save_latent = save_latent, vws = vws)
-	class(ret) = "gibbs_control"
+		save_latent = save_latent, sigma2 = sigma2)
+	class(ret) = "control_joint"
 	return(ret)
 }
 
@@ -71,15 +45,15 @@ get_gibbs_control = function(R = 1000, burn = 0, thin = 1, report = R+1,
 #' @return A list with results.
 #'
 #' @examples
-#' fixed = get_fixed()
+#' fixed = fixed_joint()
 #'
 #' @export
-get_fixed = function(beta = FALSE, gamma = FALSE, phi2 = FALSE, tau2 = FALSE,
+fixed_joint = function(beta = FALSE, gamma = FALSE, phi2 = FALSE, tau2 = FALSE,
 	sigma2 = FALSE, theta = FALSE)
 {
 	ret = list(beta = beta, gamma = gamma, phi2 = phi2, tau2 = tau2,
 		sigma2 = sigma2, theta = theta)
-	class(ret) = "gibbs_fixed"
+	class(ret) = "fixed_joint"
 	return(ret)
 }
 
@@ -98,10 +72,10 @@ get_fixed = function(beta = FALSE, gamma = FALSE, phi2 = FALSE, tau2 = FALSE,
 #' @return A list with results.
 #'
 #' @examples
-#' init = get_init(500, d1 = 5, d2 = 2)
+#' init = init_joint(500, d1 = 5, d2 = 2)
 #'
 #' @export
-get_init = function(m, d1, d2, beta = NULL, gamma = NULL, phi2 = NULL,
+init_joint = function(m, d1, d2, beta = NULL, gamma = NULL, phi2 = NULL,
 	tau2 = NULL, sigma2 = NULL, theta = NULL)
 {
 	if (is.null(beta)) { beta = numeric(d1)	}
@@ -120,7 +94,7 @@ get_init = function(m, d1, d2, beta = NULL, gamma = NULL, phi2 = NULL,
 
 	ret = list(beta = beta, gamma = gamma, phi2 = phi2, tau2 = tau2,
 		sigma2 = sigma2, theta = theta)
-	class(ret) = "gibbs_init"
+	class(ret) = "init_joint"
 	return(ret)
 }
 
@@ -133,9 +107,9 @@ get_init = function(m, d1, d2, beta = NULL, gamma = NULL, phi2 = NULL,
 #' @param X Design matrix for regression on point estimates.
 #' @param Z Design matrix for regression on variance estimates.
 #' @param df Degrees of freedom to use for variance estimates.
-#' @param init Initial values from [get_init].
-#' @param control Control object from [get_gibbs_control].
-#' @param fixed Fixed value indicators from [get_fixed].
+#' @param init Initial values from [init_joint].
+#' @param control Control object from [control_joint].
+#' @param fixed Fixed value indicators from [fixed_joint].
 #'
 #' @return A list with results from the sampler.
 #'
@@ -158,14 +132,14 @@ get_init = function(m, d1, d2, beta = NULL, gamma = NULL, phi2 = NULL,
 #' s2 = sigma2_true / df * rchisq(m, df)
 #' y = rnorm(m, theta_true, sqrt(s2))
 #'
-#' ctrl = get_gibbs_control(R = 100, report = 20)
-#' gibbs_out = gibbs(y, s2, X, Z, df, control = ctrl)
+#' ctrl = control_joint(R = 100, report = 20)
+#' gibbs_out = gibbs_joint(y, s2, X, Z, df, control = ctrl)
 #' }
 #'
 #' @export
-gibbs = function(y, s2, X, Z, df,
-	init = get_init(m = length(y), d1 = ncol(X), d2 = ncol(Z)),
-	control = get_gibbs_control(), fixed = get_fixed())
+gibbs_joint = function(y, s2, X, Z, df,
+	init = init_joint(m = length(y), d1 = ncol(X), d2 = ncol(Z)),
+	control = control_joint(), fixed = fixed_joint())
 {
 	m = length(y)
 	stopifnot(m == length(s2))
@@ -182,21 +156,21 @@ gibbs = function(y, s2, X, Z, df,
 	stopifnot(all(save_latent %in% 1:m))
 	control$save_latent = save_latent - 1
 
-	out = gibbs_cpp(y, s2, X, Z, df, init, control, fixed)
-	class(out) = "my_fit"
+	out = gibbs_joint_cpp(y, s2, X, Z, df, init, control, fixed)
+	class(out) = "joint_fit"
 	return(out)
 }
 
 #' Gibbs Sampler Summary
 #'
-#' @param object A result from [gibbs].
+#' @param object A result from [gibbs_joint].
 #' @param pr Vector of quantiles to present in summary.
 #' @param ... Additional arguments.
 #'
 #' @return A data frame with results.
 #'
 #' @export
-summary.my_fit = function(object, pr = c(0.05, 0.95), ...)
+summary.joint_fit = function(object, pr = c(0.05, 0.95), ...)
 {
 	d1 = ncol(object$beta_hist)
 	d2 = ncol(object$gamma_hist)
@@ -247,12 +221,12 @@ summary.my_fit = function(object, pr = c(0.05, 0.95), ...)
 
 #' Gibbs Sampler Print Summary
 #'
-#' @param x A result from [gibbs].
+#' @param x A result from [gibbs_joint].
 #' @param pr Vector of quantiles to present in summary.
 #' @param ... Additional arguments.
 #'
 #' @export
-print.my_fit = function(x, pr = c(0.05, 0.95), ...)
+print.joint_fit = function(x, pr = c(0.05, 0.95), ...)
 {
 	cat("Summary of fit for Joint SAE model\n")
 	print(summary(x, pr))
@@ -275,3 +249,4 @@ print.my_fit = function(x, pr = c(0.05, 0.95), ...)
 	rownames(tab) = ""
 	print(tab)
 }
+
