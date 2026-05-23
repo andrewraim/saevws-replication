@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-joint.R
 \name{init_joint}
 \alias{init_joint}
-\title{Gibbs Sampler Initial Values}
+\title{Gibbs Sampler Initial Values for Joint Model}
 \usage{
 init_joint(
   m,
@@ -39,7 +39,7 @@ init_joint(
 A list with results.
 }
 \description{
-Gibbs Sampler Initial Values
+Gibbs Sampler Initial Values for Joint Model
 }
 \examples{
 init = init_joint(500, d1 = 5, d2 = 2)

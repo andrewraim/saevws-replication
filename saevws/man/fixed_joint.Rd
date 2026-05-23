@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-joint.R
 \name{fixed_joint}
 \alias{fixed_joint}
-\title{Gibbs Sampler Fixed Components}
+\title{Gibbs Sampler Fixed Components for Joint Model}
 \usage{
 fixed_joint(
   beta = FALSE,
@@ -36,7 +36,7 @@ fixed in MCMC.}
 A list with results.
 }
 \description{
-Gibbs Sampler Fixed Components
+Gibbs Sampler Fixed Components for Joint Model
 }
 \examples{
 fixed = fixed_joint()

@@ -27,7 +27,7 @@ control_joint = function(R = 1000, burn = 0, thin = 1, report = R+1,
 	return(ret)
 }
 
-#' Gibbs Sampler Fixed Components
+#' Gibbs Sampler Fixed Components for Joint Model
 #'
 #' @param beta logical; if `TRUE`, Gibbs sampler will leave \eqn{\beta} fixed
 #' in MCMC.
@@ -57,7 +57,7 @@ fixed_joint = function(beta = FALSE, gamma = FALSE, phi2 = FALSE, tau2 = FALSE,
 	return(ret)
 }
 
-#' Gibbs Sampler Initial Values
+#' Gibbs Sampler Initial Values for Joint Model
 #'
 #' @param m Number of subjects.
 #' @param d1 Dimension of \eqn{X} matrix.
@@ -98,7 +98,7 @@ init_joint = function(m, d1, d2, beta = NULL, gamma = NULL, phi2 = NULL,
 	return(ret)
 }
 
-#' Gibbs Sampler
+#' Gibbs Sampler for Joint Model
 #'
 #' Run the Gibbs sampler.
 #'
@@ -157,11 +157,11 @@ gibbs_joint = function(y, s2, X, Z, df,
 	control$save_latent = save_latent - 1
 
 	out = gibbs_joint_cpp(y, s2, X, Z, df, init, control, fixed)
-	class(out) = "joint_fit"
+	class(out) = "fit_joint"
 	return(out)
 }
 
-#' Gibbs Sampler Summary
+#' Gibbs Sampler Summary for Joint Model
 #'
 #' @param object A result from [gibbs_joint].
 #' @param pr Vector of quantiles to present in summary.
@@ -170,7 +170,7 @@ gibbs_joint = function(y, s2, X, Z, df,
 #' @return A data frame with results.
 #'
 #' @export
-summary.joint_fit = function(object, pr = c(0.05, 0.95), ...)
+summary.fit_joint = function(object, pr = c(0.05, 0.95), ...)
 {
 	d1 = ncol(object$beta_hist)
 	d2 = ncol(object$gamma_hist)
@@ -219,14 +219,14 @@ summary.joint_fit = function(object, pr = c(0.05, 0.95), ...)
 	return(df)
 }
 
-#' Gibbs Sampler Print Summary
+#' Gibbs Sampler Print Summary for Joint Model
 #'
 #' @param x A result from [gibbs_joint].
 #' @param pr Vector of quantiles to present in summary.
 #' @param ... Additional arguments.
 #'
 #' @export
-print.joint_fit = function(x, pr = c(0.05, 0.95), ...)
+print.fit_joint = function(x, pr = c(0.05, 0.95), ...)
 {
 	cat("Summary of fit for Joint SAE model\n")
 	print(summary(x, pr))

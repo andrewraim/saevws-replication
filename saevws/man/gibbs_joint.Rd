@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-joint.R
 \name{gibbs_joint}
 \alias{gibbs_joint}
-\title{Gibbs Sampler}
+\title{Gibbs Sampler for Joint Model}
 \usage{
 gibbs_joint(
   y,

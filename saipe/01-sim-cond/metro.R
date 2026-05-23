@@ -5,8 +5,7 @@ library(tidyverse)
 library(knitr)
 library(mcmcse)
 
-source("functions.R")
-Rcpp::sourceCpp("samplers.cpp")
+source("../shared/functions.R", chdir = TRUE)
 
 set.seed(1234)
 

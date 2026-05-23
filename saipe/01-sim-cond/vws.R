@@ -2,7 +2,7 @@ library(vws)
 library(statmod)
 library(tidyverse)
 
-source("functions.R")
+source("../shared/functions.R", chdir = TRUE)
 
 set.seed(1234)
 

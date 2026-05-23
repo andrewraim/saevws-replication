@@ -23,7 +23,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 
 	const arma::mat& XtX = crossprod(X);
 
-	stopifnot(control.inherits("control_joint"), "control inherits from control_joint");
+	stopifnot(control.inherits("control_mismatch"), "control inherits from control_mismatch");
 	unsigned int R = control["R"];
 	unsigned int burn = control["burn"];
 	unsigned int thin = control["thin"];
@@ -59,7 +59,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	args.tol_merge = tol_merge;
 
 	// Set up initial values
-	stopifnot(init.inherits("init_joint"), "init inherits from init_joint");
+	stopifnot(init.inherits("init_mismatch"), "init inherits from init_mismatch");
 	arma::vec beta = init["beta"];
 	arma::vec mu = init["mu"];
 	double tau2 = init["tau2"];
@@ -93,7 +93,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	arms_quantiles.col(2).fill(5);
 
 	// Set up fixed parameters
-	stopifnot(fixed.inherits("fixed_joint"), "fixed inherits from fixed_joint");
+	stopifnot(fixed.inherits("fixed_mismatch"), "fixed inherits from fixed_mismatch");
 
 	// Note: flat prior is assumed for each parameter in this model
 

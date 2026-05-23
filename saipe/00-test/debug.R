@@ -1,6 +1,6 @@
 library(tidyverse)
 
-Rcpp::sourceCpp("../01-sim-cond/samplers.cpp")
+source("../shared/functions.R", chdir = TRUE)
 
 # ----- Data setup -----
 ff = file.path("..", "data", "saipe.csv")

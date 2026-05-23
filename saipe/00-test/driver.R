@@ -1,6 +1,6 @@
 library(vws)
 
-source("../01-sim-cond/functions.R", chdir = TRUE)
+source("../shared/functions.R", chdir = TRUE)
 
 set.seed(1234)
 
