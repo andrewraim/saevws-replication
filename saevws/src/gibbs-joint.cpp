@@ -36,12 +36,12 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	unsigned int thin = control["thin"];
 	unsigned int report = control["report"];
 	const arma::uvec& save_latent = control["save_latent"];
-	const Rcpp::List& sigma2_ctrl = control["sigma2"];
-	const Rcpp::String& sigma2_method = sigma2_ctrl["method"];
-	unsigned int max_rejects = sigma2_ctrl["max_rejects"];
-	double tol_suff = sigma2_ctrl["tol_suff"];
-	double tol_merge = sigma2_ctrl["tol_merge"];
-	unsigned int N = sigma2_ctrl["N"];
+	const Rcpp::List& inner_ctrl = control["inner"];
+	const Rcpp::String& inner_method = inner_ctrl["method"];
+	unsigned int max_rejects = inner_ctrl["max_rejects"];
+	double tol_suff = inner_ctrl["tol_suff"];
+	double tol_merge = inner_ctrl["tol_merge"];
+	unsigned int N = inner_ctrl["N"];
 
 	unsigned int rep_keep = 0;
 	unsigned int R_keep = std::ceil((R - burn) / double(thin));
@@ -92,14 +92,14 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	// 	proposals.push_back(x);
 	// }
 
-	// This is only used if sigma2_method == "vws-tune"
+	// This is only used if inner_method == "vws-tune"
 	std::vector<ConstSAEMajorizer> proposals;
 	for (unsigned int i = 0; i < m; i++) {
 		ConstSAEMajorizer maj;
 		proposals.push_back(maj);
 	}
 
-	// This is only used if sigma2_method == "arms"
+	// This is only used if inner_method == "arms"
 	std::mt19937_64 rng(static_cast<uint_fast64_t>(UINT_FAST64_MAX * R::unif_rand()));
 	arma::mat arms_quantiles(m, 3);
 	arms_quantiles.col(0).fill(0.1);
@@ -123,7 +123,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 		Rcpp::checkUserInterrupt();
 
 		if ((rep + 1) % report == 0) {
-			if (strcmp(sigma2_method.get_cstring(), "vws-tune") == 0)
+			if (strcmp(inner_method.get_cstring(), "vws-tune") == 0)
 			{
 	        	logger("Starting rep %d with avg sigma2 knots %g\n",
 	        		rep + 1, avg_sigma2_knots);
@@ -197,7 +197,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 			kappa = (df - 1) / 2.0;
 			lambda = arma::pow(y - theta, 2) / 2.0 + df % s2 / 2.0;
 
-			if (strcmp(sigma2_method.get_cstring(), "imh") == 0) {
+			if (strcmp(inner_method.get_cstring(), "imh") == 0) {
 				// Independent Metropolis sampling step from You (2021)
 				const arma::vec& u = arma::randu(m);
 				arma::vec sigma2_prop(m);
@@ -212,7 +212,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				sigma2_rejections_hist(rep) = m - idx.n_elem;
 				sigma2_rejections_areas += (arma::log(u) >= log_ratio);
 				sigma2_knot_updates_hist(rep) = 0;
-			} else if (strcmp(sigma2_method.get_cstring(), "arms") == 0) {
+			} else if (strcmp(inner_method.get_cstring(), "arms") == 0) {
 				/*
 				 * After sampling, grab a few quantiles from the proposal
 				 * to use in the next round of the Gibbs sampler. This is the
@@ -242,7 +242,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 					arms_quantiles(i,1) = sigma2_dist.envelopeQuantile(0.50);
 					arms_quantiles(i,2) = sigma2_dist.envelopeQuantile(0.95);
 				}
-			} else if (strcmp(sigma2_method.get_cstring(), "vws-tune") == 0) {
+			} else if (strcmp(inner_method.get_cstring(), "vws-tune") == 0) {
 				// Self-tuned VWS using vws package
 				// for (unsigned int i = 0; i < m; i++) {
 				// 	proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
@@ -259,7 +259,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				sigma2 = vws_out.sigma2;
 				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
 				sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
-			} else if (strcmp(sigma2_method.get_cstring(), "vws-basic") == 0) {
+			} else if (strcmp(inner_method.get_cstring(), "vws-basic") == 0) {
 				// VWS without tuning using vws package
 				// for (unsigned int i = 0; i < m; i++) {
 				// 	proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
@@ -276,7 +276,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
 				sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
 			} else {
-				Rcpp::stop("Unrecognized method in sigma2_ctrl");
+				Rcpp::stop("Unrecognized method in inner_ctrl");
 			}
 
 			auto et = std::chrono::system_clock::now();

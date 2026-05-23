@@ -5,3 +5,7 @@ gibbs_joint_cpp <- function(y, s2, X, Z, df, init, control, fixed) {
     .Call(`_saevws_gibbs_joint_cpp`, y, s2, X, Z, df, init, control, fixed)
 }
 
+gibbs_mismatch_cpp <- function(y, sigma, X, init, control, fixed) {
+    .Call(`_saevws_gibbs_mismatch_cpp`, y, sigma, X, init, control, fixed)
+}
+

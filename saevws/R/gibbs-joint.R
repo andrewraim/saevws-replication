@@ -10,7 +10,7 @@
 #' \eqn{\vartheta}). Values should be 1-based, corresponding to a subset of
 #' \eqn{\{1, \ldots, m\}}. Default is an empty vector. Saving many observations
 #' over many draws can use a lot of memory.
-#' @param sigma2 An control object obtained from [control_sigma2].
+#' @param inner An control object obtained from [control_inner].
 #'
 #' @return A list with results.
 #'
@@ -19,10 +19,10 @@
 #'
 #' @export
 control_joint = function(R = 1000, burn = 0, thin = 1, report = R+1,
-	save_latent = integer(0), sigma2 = control_sigma2())
+	save_latent = integer(0), inner = control_inner())
 {
 	ret = list(R = R, burn = burn, thin = thin, report = report,
-		save_latent = save_latent, sigma2 = sigma2)
+		save_latent = save_latent, inner = inner)
 	class(ret) = "control_joint"
 	return(ret)
 }

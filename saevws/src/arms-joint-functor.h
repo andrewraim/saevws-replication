@@ -1,5 +1,5 @@
-#ifndef ARMS_FUNCTOR
-#define ARMS_FUNCTOR
+#ifndef ARMS_JOINT_FUNCTOR
+#define ARMS_JOINT_FUNCTOR
 
 class ARMSJointFunctor {
 public:
@@ -27,4 +27,3 @@ private:
 };
 
 #endif
-

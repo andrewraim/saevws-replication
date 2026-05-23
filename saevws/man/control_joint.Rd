@@ -10,7 +10,7 @@ control_joint(
   thin = 1,
   report = R + 1,
   save_latent = integer(0),
-  sigma2 = control_sigma2()
+  inner = control_inner()
 )
 }
 \arguments{
@@ -29,7 +29,7 @@ observations whose latent draws will be saved (\eqn{\sigma^2} and
 \eqn{\{1, \ldots, m\}}. Default is an empty vector. Saving many observations
 over many draws can use a lot of memory.}
 
-\item{sigma2}{An control object obtained from \link{control_sigma2}.}
+\item{inner}{An control object obtained from \link{control_inner}.}
 }
 \value{
 A list with results.

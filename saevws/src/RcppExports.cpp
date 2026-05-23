@@ -30,9 +30,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// gibbs_mismatch_cpp
+Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma, const arma::mat& X, const Rcpp::List& init, const Rcpp::List& control, const Rcpp::List& fixed);
+RcppExport SEXP _saevws_gibbs_mismatch_cpp(SEXP ySEXP, SEXP sigmaSEXP, SEXP XSEXP, SEXP initSEXP, SEXP controlSEXP, SEXP fixedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type init(initSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type control(controlSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type fixed(fixedSEXP);
+    rcpp_result_gen = Rcpp::wrap(gibbs_mismatch_cpp(y, sigma, X, init, control, fixed));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_saevws_gibbs_joint_cpp", (DL_FUNC) &_saevws_gibbs_joint_cpp, 8},
+    {"_saevws_gibbs_mismatch_cpp", (DL_FUNC) &_saevws_gibbs_mismatch_cpp, 6},
     {NULL, NULL, 0}
 };
 

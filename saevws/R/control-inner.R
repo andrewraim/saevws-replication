@@ -1,4 +1,4 @@
-#' Gibbs Sampler VWS Control
+#' Gibbs Sampler Inner Control
 #'
 #' @param tol_suff The tolerance \eqn{\epsilon_1}.
 #' @param tol_merge The tolerance \eqn{\epsilon_2}.
@@ -11,16 +11,16 @@
 #' @return A list with results.
 #'
 #' @examples
-#' ctrl = control_sigma2()
+#' ctrl = control_inner()
 #'
 #' @export
-control_sigma2 = function(tol_suff = 1e-2, tol_merge = exp(-100),
+control_inner = function(tol_suff = 1e-2, tol_merge = exp(-100),
 	max_rejects = 1e6, method = c("vws-tune", "vws-basic", "imh", "arms"),
 	N = 50)
 {
 	ret = list(tol_suff = tol_suff, tol_merge = tol_merge,
 		max_rejects = max_rejects, method = match.arg(method), N = N)
-	class(ret) = "control_vws"
+	class(ret) = "control_inner"
 	return(ret)
 }
 

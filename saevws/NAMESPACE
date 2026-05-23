@@ -2,8 +2,8 @@
 
 S3method(print,joint_fit)
 S3method(summary,joint_fit)
+export(control_inner)
 export(control_joint)
-export(control_sigma2)
 export(fixed_joint)
 export(gibbs_joint)
 export(init_joint)
