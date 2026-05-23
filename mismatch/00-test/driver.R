@@ -5,7 +5,7 @@ set.seed(1234)
 # ----- Generate data from the model with known parameters -----
 m = 500
 X = cbind(1, rnorm(m))
-sigma = rgamma(m, 10, 5) |> sqrt()
+sigma = rgamma(m, 1.25, 20) |> sqrt()
 
 beta_true = c(1, -1)
 Xbeta_true = X %*% beta_true
