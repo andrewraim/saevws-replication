@@ -50,10 +50,10 @@ init = init_joint(m, d1, d2, beta = beta_init, gamma = gamma_init, sigma2 = s2,
 	phi2 = phi2_init, tau2 = tau2_init)
 
 # ----- Self-tuned VWS within Gibbs (Version 1) -----
-vws_ctrl = control_vws(tol_suff = tol_suff, tol_merge = tol_merge,
+inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
 	max_rejects = 1e6, method = "vws-tune", N = 50)
 control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
-	vws = vws_ctrl, save_latent = seq_len(m))
+	inner = inner_ctrl, save_latent = seq_len(m))
 vwg_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
 print(vwg_out)
 
@@ -76,9 +76,9 @@ ess(vwg_out$tau2_hist)
 multiESS(par_vwg_mcmc)
 
 # ----- ARMS within Gibbs -----
-vws_ctrl = control_vws(method = "arms")
+inner_ctrl = control_inner(method = "arms")
 control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
-	vws = vws_ctrl, save_latent = seq_len(m))
+	inner = inner_ctrl, save_latent = seq_len(m))
 arms_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
 print(arms_out)
 
@@ -93,9 +93,9 @@ quantile(ess_arms_sigma2, probs)
 quantile(ess_arms_theta, probs)
 
 # ----- Metropolis within Gibbs -----
-vws_ctrl = control_vws(method = "imh")
+inner_ctrl = control_inner(method = "imh")
 control = control_joint(R = 30000, burn = 28000, thin = 1, report = 1000,
-	vws = vws_ctrl, save_latent = seq_len(m))
+	inner = inner_ctrl, save_latent = seq_len(m))
 mwg_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
 print(mwg_out)
 
@@ -122,9 +122,9 @@ ess(mwg_out$tau2_hist)
 multiESS(par_mwg_mcmc)
 
 # ----- Fit Fay-Herriot with Gibbs sampler -----
-ctrl_fh = control_vws(method = "imh")
+ctrl_fh = control_inner(method = "imh")
 control_fh = control_joint(R = 3000, burn = 1000, thin = 1,
-	report = 1000, vws = vws_ctrl, save_latent = seq_len(m))
+	report = 1000, inner = inner_ctrl, save_latent = seq_len(m))
 fixed_fh = fixed_joint(gamma = TRUE, tau2 = TRUE, sigma2 = TRUE)
 
 fh_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
@@ -250,7 +250,7 @@ g = data.frame(mwg = sigma2_width_mwg, vwg = sigma2_width_vwg) %>%
 	theme_light()
 ggsave("sigma2-width-mwg-vs-vwg.pdf", g, width = 3.5, height = 3.5, unit="in")
 
-g = data.frame(updates = vwg_out$sigma2_knot_updates_hist) %>%
+g = data.frame(updates = vwg_out$sigma2_tunes_hist) %>%
 	mutate(iter = row_number()) %>%
 	ggplot() +
 	geom_line(aes(iter, log10(updates + 1))) +
@@ -268,10 +268,10 @@ xtable(summary(vwg_out), digits=3)
 if (FALSE) {
 	# ----- VWS within Gibbs, no self-tuning -----
 	# This takes a while to run, so do it last
-	vws_ctrl = control_vws(tol_suff = tol_suff, tol_merge = tol_merge,
+	inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
 		max_rejects = 1e6, method = "vws-basic", N = 50)
 	control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1,
-		vws = vws_ctrl, save_latent = seq_len(m))
+		inner = inner_ctrl, save_latent = seq_len(m))
 	fixed = fixed_joint()
 	vwg_basic_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
 	print(vwg_basic_out)
