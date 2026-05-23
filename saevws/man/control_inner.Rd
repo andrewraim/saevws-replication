@@ -5,6 +5,7 @@
 \title{Gibbs Sampler Inner Control}
 \usage{
 control_inner(
+  tol_refine = 0.01,
   tol_suff = 0.01,
   tol_merge = exp(-100),
   max_rejects = 1e+06,

@@ -1,25 +1,26 @@
-#ifndef VWS_STEP_TUNE_H
-#define VWS_STEP_TUNE_H
+#ifndef JOINT_VWS_TUNE_H
+#define JOINT_VWS_TUNE_H
 
 #include <RcppArmadillo.h>
-#include "const-sae-majorizer.h"
-#include "vws-step-output.h"
+#include "joint-sae-majorizer.h"
+#include "joint-vws-output.h"
 #include "local-util.h"
 
 /*
 * Self-tuned VWS step. Before removing knots, check that the overall rejection
-* rate does not increase above `tol1`. This check involves some computational
-* overhead.
+* rate does not increase above `tol_suff`. This check involves some
+* computational overhead.
 *
 * This function has at least one argument that cannot be invoked via Rcpp.
 */
-inline VWSStepOutput vws_step_tune(std::vector<ConstSAEMajorizer>& proposals,
+inline JointVWSOutput joint_vws_tune(std::vector<JointSAEMajorizer>& proposals,
 	const arma::vec& mu, double tau, const arma::vec& kappa,
-	const arma::vec& lambda, unsigned int max_rejects, double tol1, double tol2)
+	const arma::vec& lambda, unsigned int max_rejects, double tol_suff,
+	double tol_merge)
 {
 	unsigned int m = mu.n_elem;
 
-	VWSStepOutput out;
+	JointVWSOutput out;
 	out.sigma2 = arma::vec(m);
 	out.rejects = arma::zeros<arma::uvec>(m);
 	out.updates = arma::zeros<arma::uvec>(m);
@@ -27,8 +28,8 @@ inline VWSStepOutput vws_step_tune(std::vector<ConstSAEMajorizer>& proposals,
 
 	for (unsigned int i = 0; i < m; i++)
 	{
-		ConstSAEMajorizer& maj = proposals[i];
-		ConstSAEMajorizerOutput maj_out = maj.get_output(mu(i), tau, kappa(i), lambda(i));
+		JointSAEMajorizer& maj = proposals[i];
+		JointSAEMajorizerOutput maj_out = maj.get_output(mu(i), tau, kappa(i), lambda(i));
 
 		if (i % 100 == 0) {
 			Rcpp::checkUserInterrupt();
@@ -64,26 +65,26 @@ inline VWSStepOutput vws_step_tune(std::vector<ConstSAEMajorizer>& proposals,
 				/* Reject x and update proposal according to thresholds */
 				out.rejects(i)++;
 
-				if (maj_out.log_bound < log(tol1)) {
+				if (maj_out.log_bound < log(tol_suff)) {
 					/*
 					 * Drop regions that contribute very little. But only if
 					 * overall bound is small enough, and dropping the region
-					 * does not put us back over tol1 threshold.
+					 * does not put us back over tol_suff threshold.
 					*/
 					for (unsigned int j = 0; j < maj_out.upper.length() - 1; j++) {
-						if (maj_out.log_bound_regions(j) >= log(tol2)) {
+						if (maj_out.log_bound_regions(j) >= log(tol_merge)) {
 							continue;
 						}
 
 						// Make a copy and drop the knot in the copy.
-						ConstSAEMajorizer maj0 = maj;
+						JointSAEMajorizer maj0 = maj;
 						maj0.delete_knots({ maj_out.upper(j) });
 
 						// If the bound of the copy has not increased beyond
 						// the threshold, replace the original with the copy.
 						// Also make sure to save the updated output object.
-						ConstSAEMajorizerOutput maj0_out = maj0.get_output(mu(i), tau, kappa(i), lambda(i));
-						if (maj0_out.log_bound < log(tol1)) {
+						JointSAEMajorizerOutput maj0_out = maj0.get_output(mu(i), tau, kappa(i), lambda(i));
+						if (maj0_out.log_bound < log(tol_suff)) {
 							maj = maj0;
 							maj_out = maj0_out;
 							out.updates(i)++;

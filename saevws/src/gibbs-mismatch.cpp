@@ -1,10 +1,7 @@
 #include <RcppArmadillo.h>
 #include <chrono>
 #include "local-util.h"
-#include "sae-proposal.h"
-#include "vws-step-output.h"
-#include "vws-step-basic.h"
-#include "vws-step-tune.h"
+#include "mismatch-sae-proposal.h"
 #include "arms-mismatch-functor.h"
 #include "armspp"
 
@@ -46,7 +43,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 
 	arma::uvec mu_rejections_hist(R);
 	arma::uvec mu_knots_hist(R);
-	arma::uvec mu_knot_updates_hist(R);
+	arma::uvec mu_tunes_hist(R);
 	arma::uvec mu_rejections_areas(m);
 	mu_rejections_areas.fill(0);
 	double avg_mu_knots = 0;
@@ -66,23 +63,11 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 
 	arma::vec Xbeta = X * beta;
 
-	// arma::vec kappa = (df - 1) / 2.0;
-	// arma::vec lambda = arma::pow(y - theta, 2) / 2.0 + df % s2 / 2.0;
-	// arma::vec tau(m);
-	// tau.fill(std::sqrt(tau2));
-
 	// This is only used if vws_method == "vws-tune"
-	// std::vector<SAEProposal> proposals;
-	// for (unsigned int i = 0; i < m; i++) {
-	// 	SAEProposal x(Zgamma(i), tau(i), kappa(i), lambda(i));
-	// 	proposals.push_back(x);
-	// }
-
-	// This is only used if inner_method == "vws-tune"
-	std::vector<ConstSAEMajorizer> proposals;
+	std::vector<MismatchSAEProposal> proposals;
 	for (unsigned int i = 0; i < m; i++) {
-		ConstSAEMajorizer maj;
-		proposals.push_back(maj);
+	 	MismatchSAEProposal x(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
+	 	proposals.push_back(x);
 	}
 
 	// This is only used if inner_method == "arms"
@@ -137,7 +122,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				mu(idx) = mu_prop.elem(idx);
 				mu_rejections_hist(rep) = m - idx.n_elem;
 				mu_rejections_areas += (arma::log(u) >= log_ratio);
-				mu_knot_updates_hist(rep) = 0;
+				mu_tunes_hist(rep) = 0;
 			} else if (strcmp(inner_method.get_cstring(), "arms") == 0) {
 				/*
 				 * After sampling, grab a few quantiles from the proposal
@@ -170,39 +155,24 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				}
 			} else if (strcmp(inner_method.get_cstring(), "vws-tune") == 0) {
 				// Self-tuned VWS using vws package
-				// for (unsigned int i = 0; i < m; i++) {
-				// 	proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
-			    // 	const auto& vws_out = vws::rejection_tune(proposals[i], 1, args);
-				// 	sigma2 = vws_out.draws[0];
-				// 	mu_rejections_hist(rep) += vws_out.rejects[0];
-				// 	mu_knot_updates_hist(rep) += vws_out.tunes[0];
-				// }
-
-				// Self-tuned VWS using customized implementation
-				// const VWSStepOutput& vws_out = vws_step_tune(proposals,
-				//  	Zgamma, std::sqrt(tau2), kappa, lambda, max_rejects,
-				//  	tol_suff, tol_merge);
-				// sigma2 = vws_out.sigma2;
-				// mu_rejections_hist(rep) = arma::sum(vws_out.rejects);
-				// mu_knot_updates_hist(rep) = arma::sum(vws_out.updates);
-				Rcpp::stop("Implement vws-tune");
+				for (unsigned int i = 0; i < m; i++) {
+				 	proposals[i].update(Xbeta(i), std::sqrt(tau2));
+			     	const auto& vws_out = vws::rejection_tune(proposals[i], 1, args);
+				 	mu(i) = vws_out.draws[0];
+				 	mu_rejections_areas(i) += vws_out.rejects[0];
+				 	mu_rejections_hist(rep) += vws_out.rejects[0];
+				 	mu_tunes_hist(rep) += vws_out.tunes[0];
+				}
 			} else if (strcmp(inner_method.get_cstring(), "vws-basic") == 0) {
 				// VWS without tuning using vws package
-				// for (unsigned int i = 0; i < m; i++) {
-				// 	proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
-			    // 	const auto& vws_out = vws::rejection(proposals[i], 1, args);
-				// 	sigma2 = vws_out.draws[0];
-				// 	mu_rejections_hist(rep) += vws_out.rejects[0];
-				// 	mu_knot_updates_hist(rep) += vws_out.tunes[0];
-				// }
-
-				// VWS without tuning using customized implementation
-				// const VWSStepOutput& vws_out = vws_step_basic(Zgamma,
-				// 	std::sqrt(tau2), kappa, lambda, N, tol_suff, max_rejects);
-				// sigma2 = vws_out.sigma2;
-				// mu_rejections_hist(rep) = arma::sum(vws_out.rejects);
-				// mu_knot_updates_hist(rep) = arma::sum(vws_out.updates);
-				Rcpp::stop("Implement vws-basic");
+				for (unsigned int i = 0; i < m; i++) {
+					MismatchSAEProposal h(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
+			    	h.refine(N - 1, tol_suff);
+			    	const auto& vws_out = vws::rejection(h, 1, args);
+					mu(i) = vws_out.draws[0];
+					mu_rejections_areas(i) += vws_out.rejects[0];
+					mu_rejections_hist(rep) += vws_out.rejects[0];
+				}
 			} else {
 				Rcpp::stop("Unrecognized method in inner_ctrl");
 			}
@@ -237,11 +207,8 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 
 		// Save total number of knots at this point
 		mu_knots_hist(rep) = 0;
-		// for (unsigned int i = 0; i < m; i++) {
-		// 	mu_knots_hist(rep) += proposals[i].size();
-		// }
-		for (unsigned int i = 0; i < proposals.size(); i++) {
-			mu_knots_hist(rep) += proposals[i].get_knots().length();
+		for (unsigned int i = 0; i < m; i++) {
+		 	mu_knots_hist(rep) += proposals[i].size();
 		}
 		avg_mu_knots = mu_knots_hist(rep) / double(m);
 
@@ -276,7 +243,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 		Rcpp::Named("mu_rejections_hist") = mu_rejections_hist,
 		Rcpp::Named("mu_rejections_areas") = mu_rejections_areas,
 		Rcpp::Named("mu_knots_hist") = mu_knots_hist,
-		Rcpp::Named("mu_knot_updates_hist") = mu_knot_updates_hist,
+		Rcpp::Named("mu_tunes_hist") = mu_tunes_hist,
 		Rcpp::Named("m") = m
 	);
 }

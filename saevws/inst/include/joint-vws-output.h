@@ -1,9 +1,9 @@
-#ifndef VWS_STEP_OUTPUT_H
-#define VWS_STEP_OUTPUT_H
+#ifndef JOINT_VWS_OUTPUT_H
+#define JOINT_VWS_OUTPUT_H
 
 #include <RcppArmadillo.h>
 
-struct VWSStepOutput {
+struct JointVWSOutput {
 	arma::vec sigma2;
 	arma::uvec rejects;
 	arma::uvec updates;

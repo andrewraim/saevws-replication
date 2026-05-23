@@ -1,22 +1,22 @@
-#ifndef VWS_STEP_BASIC_H
-#define VWS_STEP_BASIC_H
+#ifndef JOINT_VWS_BASIC_H
+#define JOINT_VWS_BASIC_H
 
 #include <RcppArmadillo.h>
-#include "const-sae-majorizer.h"
-#include "vws-step-output.h"
+#include "joint-sae-majorizer.h"
+#include "joint-vws-output.h"
 #include "lognormal-helper.h"
 #include "local-util.h"
 
 /*
 * VWS step without tuning.
 */
-inline VWSStepOutput vws_step_basic(const arma::vec& mu, double tau,
+inline JointVWSOutput joint_vws_basic(const arma::vec& mu, double tau,
 	const arma::vec& kappa, const arma::vec& lambda, unsigned int N, double tol,
 	unsigned int max_rejects)
 {
 	unsigned int m = mu.n_elem;
 
-	VWSStepOutput out;
+	JointVWSOutput out;
 	out.sigma2 = arma::vec(m);
 	out.rejects = arma::zeros<arma::uvec>(m);
 	out.log_bound = arma::vec(m);
@@ -63,3 +63,4 @@ inline VWSStepOutput vws_step_basic(const arma::vec& mu, double tau,
 }
 
 #endif
+

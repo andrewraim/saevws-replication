@@ -1,5 +1,5 @@
-#ifndef SAE_PROPOSAL_H
-#define SAE_PROPOSAL_H
+#ifndef JOINT_SAE_PROPOSAL_H
+#define JOINT_SAE_PROPOSAL_H
 
 // [[Rcpp::depends(vws, fntl)]]
 #include "vws.h"
@@ -7,10 +7,10 @@
 /*
 * Define a subclass of FMMProposal that we can expose to R via Modules
 */
-class SAEProposal : public vws::FMMProposal<double, vws::RealConstRegion>
+class JointSAEProposal : public vws::FMMProposal<double, vws::RealConstRegion>
 {
 public:
-	SAEProposal(
+	JointSAEProposal(
 		double mu,
 		double tau,
 		double kappa,
@@ -29,7 +29,7 @@ private:
 * Implementation of member functions is below
 */
 
-inline void SAEProposal::update(double mu, double tau, double kappa, double lambda)
+inline void JointSAEProposal::update(double mu, double tau, double kappa, double lambda)
 {
 	const vws::dfdb& w = [=](double x, bool log = true) -> double {
 		double out = (x > 0) ? d_invgamma(x, kappa, lambda, true) : R_NegInf;
@@ -60,7 +60,7 @@ inline void SAEProposal::update(double mu, double tau, double kappa, double lamb
 	}
 }
 
-inline vws::RealConstRegion SAEProposal::supp(
+inline vws::RealConstRegion JointSAEProposal::supp(
 	double mu,
 	double tau,
 	double kappa,

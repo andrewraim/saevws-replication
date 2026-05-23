@@ -14,8 +14,9 @@
 #' ctrl = control_inner()
 #'
 #' @export
-control_inner = function(tol_suff = 1e-2, tol_merge = exp(-100),
-	max_rejects = 1e6, method = c("vws-tune", "vws-basic", "imh", "arms"),
+control_inner = function(tol_refine = 1e-2, tol_suff = 1e-2,
+	tol_merge = exp(-100), max_rejects = 1e6,
+	method = c("vws-tune", "vws-basic", "imh", "arms"),
 	N = 50)
 {
 	ret = list(tol_suff = tol_suff, tol_merge = tol_merge,

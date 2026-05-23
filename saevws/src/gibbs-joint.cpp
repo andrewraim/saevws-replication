@@ -1,10 +1,10 @@
 #include <RcppArmadillo.h>
 #include <chrono>
 #include "local-util.h"
-#include "sae-proposal.h"
-#include "vws-step-output.h"
-#include "vws-step-basic.h"
-#include "vws-step-tune.h"
+#include "joint-sae-proposal.h"
+#include "joint-vws-output.h"
+#include "joint-vws-basic.h"
+#include "joint-vws-tune.h"
 #include "arms-joint-functor.h"
 #include "armspp"
 
@@ -56,7 +56,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 
 	arma::uvec sigma2_rejections_hist(R);
 	arma::uvec sigma2_knots_hist(R);
-	arma::uvec sigma2_knot_updates_hist(R);
+	arma::uvec sigma2_tunes_hist(R);
 	arma::uvec sigma2_rejections_areas(m);
 	sigma2_rejections_areas.fill(0);
 	double avg_sigma2_knots = 0;
@@ -93,9 +93,9 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	// }
 
 	// This is only used if inner_method == "vws-tune"
-	std::vector<ConstSAEMajorizer> proposals;
+	std::vector<JointSAEMajorizer> proposals;
 	for (unsigned int i = 0; i < m; i++) {
-		ConstSAEMajorizer maj;
+		JointSAEMajorizer maj;
 		proposals.push_back(maj);
 	}
 
@@ -211,7 +211,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				sigma2(idx) = sigma2_prop.elem(idx);
 				sigma2_rejections_hist(rep) = m - idx.n_elem;
 				sigma2_rejections_areas += (arma::log(u) >= log_ratio);
-				sigma2_knot_updates_hist(rep) = 0;
+				sigma2_tunes_hist(rep) = 0;
 			} else if (strcmp(inner_method.get_cstring(), "arms") == 0) {
 				/*
 				 * After sampling, grab a few quantiles from the proposal
@@ -249,16 +249,16 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 			    // 	const auto& vws_out = vws::rejection_tune(proposals[i], 1, args);
 				// 	sigma2 = vws_out.draws[0];
 				// 	sigma2_rejections_hist(rep) += vws_out.rejects[0];
-				// 	sigma2_knot_updates_hist(rep) += vws_out.tunes[0];
+				// 	sigma2_tunes_hist(rep) += vws_out.tunes[0];
 				// }
 
 				// Self-tuned VWS using customized implementation
-				const VWSStepOutput& vws_out = vws_step_tune(proposals,
+				const JointVWSOutput& vws_out = joint_vws_tune(proposals,
 				 	Zgamma, std::sqrt(tau2), kappa, lambda, max_rejects,
 				 	tol_suff, tol_merge);
 				sigma2 = vws_out.sigma2;
 				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
-				sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
+				sigma2_tunes_hist(rep) = arma::sum(vws_out.updates);
 			} else if (strcmp(inner_method.get_cstring(), "vws-basic") == 0) {
 				// VWS without tuning using vws package
 				// for (unsigned int i = 0; i < m; i++) {
@@ -266,15 +266,15 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 			    // 	const auto& vws_out = vws::rejection(proposals[i], 1, args);
 				// 	sigma2 = vws_out.draws[0];
 				// 	sigma2_rejections_hist(rep) += vws_out.rejects[0];
-				// 	sigma2_knot_updates_hist(rep) += vws_out.tunes[0];
+				// 	sigma2_tunes_hist(rep) += vws_out.tunes[0];
 				// }
 
 				// VWS without tuning using customized implementation
-				const VWSStepOutput& vws_out = vws_step_basic(Zgamma,
+				const JointVWSOutput& vws_out = joint_vws_basic(Zgamma,
 					std::sqrt(tau2), kappa, lambda, N, tol_suff, max_rejects);
 				sigma2 = vws_out.sigma2;
 				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);
-				sigma2_knot_updates_hist(rep) = arma::sum(vws_out.updates);
+				sigma2_tunes_hist(rep) = arma::sum(vws_out.updates);
 			} else {
 				Rcpp::stop("Unrecognized method in inner_ctrl");
 			}
@@ -334,7 +334,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 		Rcpp::Named("sigma2_rejections_hist") = sigma2_rejections_hist,
 		Rcpp::Named("sigma2_rejections_areas") = sigma2_rejections_areas,
 		Rcpp::Named("sigma2_knots_hist") = sigma2_knots_hist,
-		Rcpp::Named("sigma2_knot_updates_hist") = sigma2_knot_updates_hist,
+		Rcpp::Named("sigma2_tunes_hist") = sigma2_tunes_hist,
 		Rcpp::Named("m") = m
 	);
 }

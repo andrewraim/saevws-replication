@@ -2,10 +2,10 @@
 #define SAEVWS_H
 
 #include "local-util.h"
-#include "sae-proposal.h"
-#include "const-sae-majorizer.h"
-#include "vws-step-output.h"
-#include "vws-step-basic.h"
-#include "vws-step-tune.h"
+#include "joint-sae-proposal.h"
+#include "joint-sae-majorizer.h"
+#include "joint-vws-output.h"
+#include "joint-vws-basic.h"
+#include "joint-vws-tune.h"
 
 #endif

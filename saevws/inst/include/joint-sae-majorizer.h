@@ -1,11 +1,11 @@
-#ifndef CONST_SAE_MAJORIZER_H
-#define CONST_SAE_MAJORIZER_H
+#ifndef JOINT_SAE_MAJORIZER_H
+#define JOINT_SAE_MAJORIZER_H
 
 #include <Rcpp.h>
 #include "vws.h"
 #include "local-util.h"
 
-struct ConstSAEMajorizerOutput {
+struct JointSAEMajorizerOutput {
 	Rcpp::NumericVector lower;
 	Rcpp::NumericVector upper;
 	Rcpp::NumericVector lxu;
@@ -13,7 +13,7 @@ struct ConstSAEMajorizerOutput {
 	Rcpp::NumericVector log_bound_regions;
 	double log_bound;
 
-	ConstSAEMajorizerOutput operator=(const ConstSAEMajorizerOutput& x) {
+	JointSAEMajorizerOutput operator=(const JointSAEMajorizerOutput& x) {
 		this->lower = x.lower;
 		this->upper = x.upper;
 		this->lxu = x.lxu;
@@ -24,16 +24,16 @@ struct ConstSAEMajorizerOutput {
 	}
 };
 
-class ConstSAEMajorizer {
+class JointSAEMajorizer {
 public:
-	ConstSAEMajorizer()
+	JointSAEMajorizer()
 	: _knots(), _lower(), _upper()
 	{
 		_lower.push_back(0);
 		_upper.push_back(R_PosInf);
 	}
 
-	ConstSAEMajorizer(const Rcpp::NumericVector& knots)
+	JointSAEMajorizer(const Rcpp::NumericVector& knots)
 	: _knots(), _lower(), _upper()
 	{
 		_knots.insert(knots.begin(), knots.end());
@@ -126,7 +126,7 @@ public:
 		return log ? out : exp(out);
 	}
 
-	ConstSAEMajorizerOutput get_output(double mu, double tau, double kappa,
+	JointSAEMajorizerOutput get_output(double mu, double tau, double kappa,
 		double lambda) const
 	{
 		unsigned int N = _lower.size();
@@ -141,7 +141,7 @@ public:
 			log_w_min(j) = w_minor(j, kappa, lambda, true);
 		}
 
-		ConstSAEMajorizerOutput out;
+		JointSAEMajorizerOutput out;
 		out.lower = lower;
 		out.upper = upper;
 
@@ -161,7 +161,7 @@ public:
 		return out;
 	}
 
-	ConstSAEMajorizer operator=(const ConstSAEMajorizer& x) {
+	JointSAEMajorizer operator=(const JointSAEMajorizer& x) {
 		this->_knots = x._knots;
 		this->_lower = x._lower;
 		this->_upper = x._upper;
