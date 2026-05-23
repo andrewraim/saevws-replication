@@ -33,7 +33,7 @@ Zgamma = Z %*% gamma
 # ----- Focus on one obs -----
 
 ## This obs seems to have very low df
-## This is influcing the invgamma distribution so that it is positive on larger
+## This is influencing the invgamma distribution so that it is positive on larger
 ## supports. We tend to draw large numbers from it which are not accepted in
 ## the MH step.
 idx = 2655

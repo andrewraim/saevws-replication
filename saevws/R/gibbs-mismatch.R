@@ -65,7 +65,7 @@ fixed_mismatch = function(beta = FALSE, tau2 = FALSE, mu = FALSE)
 #' @export
 init_mismatch = function(m, d, beta = NULL, tau2 = NULL, mu = NULL)
 {
-	if (is.null(beta)) { beta = numeric(d1)	}
+	if (is.null(beta)) { beta = numeric(d)	}
 	if (is.null(tau2)) { tau2 = 1 }
 	if (is.null(mu)) { mu = rep(1, m) }
 
@@ -132,7 +132,7 @@ gibbs_mismatch = function(y, sigma, X,
 	stopifnot(all(save_latent %in% 1:m))
 	control$save_latent = save_latent - 1
 
-	out = gibbs_joint_cpp(y, s2, X, Z, df, init, control, fixed)
+	out = gibbs_mismatch_cpp(y, sigma, X, init, control, fixed)
 	class(out) = "fit_mismatch"
 	return(out)
 }
@@ -148,8 +148,7 @@ gibbs_mismatch = function(y, sigma, X,
 #' @export
 summary.fit_mismatch = function(object, pr = c(0.05, 0.95), ...)
 {
-	d1 = ncol(object$beta_hist)
-	d2 = ncol(object$gamma_hist)
+	d = ncol(object$beta_hist)
 
 	df_beta = as.data.frame(cbind(
 		apply(object$beta_hist, 2, mean),
@@ -157,23 +156,7 @@ summary.fit_mismatch = function(object, pr = c(0.05, 0.95), ...)
 		t(apply(object$beta_hist, 2, quantile, probs = pr)),
 		apply(object$beta_hist, 2, ess)
 	))
-	rownames(df_beta) = sprintf("beta%d", 1:d1)
-
-	df_gamma = as.data.frame(cbind(
-		apply(object$gamma_hist, 2, mean),
-		apply(object$gamma_hist, 2, sd),
-		t(apply(object$gamma_hist, 2, quantile, probs = pr)),
-		apply(object$gamma_hist, 2, ess)
-	))
-	rownames(df_gamma) = sprintf("gamma%d", 1:d2)
-
-	df_phi2 = as.data.frame(cbind(
-		mean(object$phi2_hist),
-		sd(object$phi2_hist),
-		t(quantile(object$phi2_hist, probs = pr)),
-		ess(object$phi2_hist)
-	))
-	rownames(df_phi2) = sprintf("phi2")
+	rownames(df_beta) = sprintf("beta%d", 1:d)
 
 	df_tau2 = as.data.frame(cbind(
 		mean(object$tau2_hist),
@@ -183,7 +166,7 @@ summary.fit_mismatch = function(object, pr = c(0.05, 0.95), ...)
 	))
 	rownames(df_tau2) = sprintf("tau2")
 
-	df = rbind(df_beta, df_gamma, df_phi2, df_tau2)
+	df = rbind(df_beta, df_tau2)
 	quantile_names = sprintf("%g%%", 100 * pr)
 	colnames(df) = c("mean", "sd", quantile_names, "ess")
 	idx1 = 1:2
@@ -204,19 +187,19 @@ summary.fit_mismatch = function(object, pr = c(0.05, 0.95), ...)
 #' @export
 print.fit_mismatch = function(x, pr = c(0.05, 0.95), ...)
 {
-	cat("Summary of fit for Joint SAE model\n")
+	cat("Summary of fit for Mismatch SAE model\n")
 	print(summary(x, pr))
 
 	cat("----\n")
 	printf("Total iterations R: %d   Burn: %d   Thin: %d   Saved draws: %d\n",
 		x$R, x$burn, x$thin, x$R_keep)
 
-	printf("Rejections in sigma2 step: %d  Total proposals: %d  Rejection rate: %g%%\n",
-		sum(x$sigma2_rejections_hist),
-		sum(x$sigma2_rejections_hist) + x$R * x$m,
-		100 * sum(x$sigma2_rejections_hist) / (sum(x$sigma2_rejections_hist) + x$R*x$m))
+	printf("Rejections in mu step: %d  Total proposals: %d  Rejection rate: %g%%\n",
+		sum(x$mu_rejections_hist),
+		sum(x$mu_rejections_hist) + x$R * x$m,
+		100 * sum(x$mu_rejections_hist) / (sum(x$mu_rejections_hist) + x$R*x$m))
 
-	printf("Avg regions in sigma2 step: %g\n", sum(x$sigma2_knots_hist) / (x$R * x$m))
+	printf("Avg regions in mu step: %g\n", sum(x$mu_knots_hist) / (x$R * x$m))
 
 	cat("----\n")
 	printf("Elapsed time (Seconds):\n")
@@ -225,4 +208,3 @@ print.fit_mismatch = function(x, pr = c(0.05, 0.95), ...)
 	rownames(tab) = ""
 	print(tab)
 }
-

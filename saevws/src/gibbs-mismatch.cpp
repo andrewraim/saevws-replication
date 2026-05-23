@@ -147,7 +147,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				*/
 				for (unsigned int i = 0; i < m; i++) {
 					const Rcpp::NumericVector& points = Rcpp::wrap(arms_quantiles.row(i));
-					ARMSMismatchFunctor armsfun(mu(i), sigma(i), Xbeta(i), std::sqrt(tau2));
+					ARMSMismatchFunctor armsfun(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
 					armspp::ARMS<double, ARMSMismatchFunctor, Rcpp::NumericVector::const_iterator>
 					mu_dist(
 						armsfun,  // log-density functor
