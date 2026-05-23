@@ -122,23 +122,22 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 			// lambda = arma::pow(y - theta, 2) / 2.0 + df % s2 / 2.0;
 
 			if (strcmp(inner_method.get_cstring(), "imh") == 0) {
-				// Independent Metropolis sampling step from You (2021)
-				/*
+				// Independent Metropolis sampling step from You & Rao (2002)
 				const arma::vec& u = arma::randu(m);
-				arma::vec sigma2_prop(m);
+				arma::vec mu_prop(m);
+				arma::vec log_num(m);
+				arma::vec log_den(m);
 				for (unsigned int i = 0; i < m; i++) {
-					sigma2_prop(i) = r_invgamma(kappa(i), lambda(i));
+					mu_prop(i) = R::rlnorm(Xbeta(i), std::sqrt(tau2));
+					log_num(i) = R::dnorm(mu_prop(i), y(i), sigma(i), true);
+					log_den(i) = R::dnorm(mu(i), y(i), sigma(i), true);
 				}
-				const arma::vec& log_num = dlnorm(sigma2_prop, Zgamma, tau, true);
-				const arma::vec& log_den = dlnorm(sigma2, Zgamma, tau, true);
 				const arma::vec& log_ratio = arma::min(log_num - log_den, arma::zeros(m));
 				const arma::uvec& idx = arma::find(arma::log(u) < log_ratio);
-				sigma2(idx) = sigma2_prop.elem(idx);
+				mu(idx) = mu_prop.elem(idx);
 				mu_rejections_hist(rep) = m - idx.n_elem;
 				mu_rejections_areas += (arma::log(u) >= log_ratio);
 				mu_knot_updates_hist(rep) = 0;
-				*/
-				Rcpp::stop("Implement imh");
 			} else if (strcmp(inner_method.get_cstring(), "arms") == 0) {
 				/*
 				 * After sampling, grab a few quantiles from the proposal
