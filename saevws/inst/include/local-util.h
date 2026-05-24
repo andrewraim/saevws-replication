@@ -1,5 +1,5 @@
-#ifndef LOCAL_UTIL_H
-#define LOCAL_UTIL_H
+#ifndef SAEVWS_LOCAL_UTIL_H
+#define SAEVWS_LOCAL_UTIL_H
 
 #include <RcppArmadillo.h>
 #include "vws.h"

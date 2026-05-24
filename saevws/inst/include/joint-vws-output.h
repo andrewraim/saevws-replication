@@ -1,9 +1,9 @@
-#ifndef JOINT_VWS_OUTPUT_H
-#define JOINT_VWS_OUTPUT_H
+#ifndef SAEVWS_JOINT_VWS_OUTPUT_H
+#define SAEVWS_JOINT_VWS_OUTPUT_H
 
 #include <RcppArmadillo.h>
 
-struct JointVWSOutput {
+struct joint_vws_output {
 	arma::vec sigma2;
 	arma::uvec rejects;
 	arma::uvec updates;

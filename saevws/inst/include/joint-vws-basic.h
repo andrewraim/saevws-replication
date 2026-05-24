@@ -1,5 +1,5 @@
-#ifndef JOINT_VWS_BASIC_H
-#define JOINT_VWS_BASIC_H
+#ifndef SAEVWS_JOINT_VWS_BASIC_H
+#define SAEVWS_JOINT_VWS_BASIC_H
 
 #include <RcppArmadillo.h>
 #include "joint-sae-majorizer.h"
@@ -10,13 +10,13 @@
 /*
 * VWS step without tuning.
 */
-inline JointVWSOutput joint_vws_basic(const arma::vec& mu, double tau,
+inline joint_vws_output joint_vws_basic(const arma::vec& mu, double tau,
 	const arma::vec& kappa, const arma::vec& lambda, unsigned int N, double tol,
 	unsigned int max_rejects)
 {
 	unsigned int m = mu.n_elem;
 
-	JointVWSOutput out;
+	joint_vws_output out;
 	out.sigma2 = arma::vec(m);
 	out.rejects = arma::zeros<arma::uvec>(m);
 	out.log_bound = arma::vec(m);
@@ -44,12 +44,12 @@ inline JointVWSOutput joint_vws_basic(const arma::vec& mu, double tau,
 		fntl::quantile qf = [&](double p, bool lower = true, bool log = false) {
 			return R::qlnorm(p, mu(i), tau, lower, log);
 		};
-		vws::UnivariateHelper helper(df, pf, qf);
+		vws::univariate_helper helper(df, pf, qf);
 
 		// Restrict range to something smaller than (0, Inf] to avoid numerical
 		// issues in matrix computation of likelihood.
-		vws::RealConstRegion supp(0, R_PosInf, w, helper);
-		vws::FMMProposal<double, vws::RealConstRegion> h({ supp });
+		vws::real_const_region supp(0, R_PosInf, w, helper);
+		vws::fmm_proposal<double, vws::real_const_region> h({ supp });
 
 		const Rcpp::NumericVector& refine_out = h.refine(N - 1, tol);
 		const vws::rejection_result<double>& vws_out = vws::rejection(h, 1, args);

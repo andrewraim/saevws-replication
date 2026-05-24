@@ -1,16 +1,12 @@
-#ifndef LOGNORMAL_HELPER_H
-#define LOGNORMAL_HELPER_H
+#ifndef SAEVWS_LOGNORMAL_HELPER_H
+#define SAEVWS_LOGNORMAL_HELPER_H
 
 #include "vws.h"
 
-/*
-* Subclass of `LognormalHelper` for the Uniform distribution.
-*/
-
-class LognormalHelper // : public vws::UnivariateHelper
+class lognormal_helper
 {
 public:
-	LognormalHelper(double mean, double sd)
+	lognormal_helper(double mean, double sd)
 	: _mean(mean), _sd(sd)
 	{
 	}
@@ -27,7 +23,7 @@ public:
 	bool s(double x) const {
 		return 0 <= x;
 	}
-	const LognormalHelper& operator=(const LognormalHelper& x) {
+	const lognormal_helper& operator=(const lognormal_helper& x) {
 		_mean = x._mean;
 		_sd = x._sd;
 		return *this;

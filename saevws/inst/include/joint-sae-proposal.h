@@ -1,35 +1,35 @@
-#ifndef JOINT_SAE_PROPOSAL_H
-#define JOINT_SAE_PROPOSAL_H
+#ifndef SAEVWS_JOINT_SAE_PROPOSAL_H
+#define SAEVWS_JOINT_SAE_PROPOSAL_H
 
 // [[Rcpp::depends(vws, fntl)]]
 #include "vws.h"
 
 /*
-* Define a subclass of FMMProposal that we can expose to R via Modules
+* Define a subclass of fmm_proposal that we can expose to R via Modules
 */
-class JointSAEProposal : public vws::FMMProposal<double, vws::RealConstRegion>
+class joint_sae_proposal : public vws::fmm_proposal<double, vws::real_const_region>
 {
 public:
-	JointSAEProposal(
+	joint_sae_proposal(
 		double mu,
 		double tau,
 		double kappa,
 		double lambda)
-	: vws::FMMProposal<double, vws::RealConstRegion>(supp(mu, tau, kappa, lambda))
+	: vws::fmm_proposal<double, vws::real_const_region>(supp(mu, tau, kappa, lambda))
 	{
 	}
 
 	void update(double mu, double tau, double kappa, double lambda);
 
 private:
-	vws::RealConstRegion supp(double mu, double tau, double kappa, double lambda);
+	vws::real_const_region supp(double mu, double tau, double kappa, double lambda);
 };
 
 /*
 * Implementation of member functions is below
 */
 
-inline void JointSAEProposal::update(double mu, double tau, double kappa, double lambda)
+inline void joint_sae_proposal::update(double mu, double tau, double kappa, double lambda)
 {
 	const vws::dfdb& w = [=](double x, bool log = true) -> double {
 		double out = (x > 0) ? d_invgamma(x, kappa, lambda, true) : R_NegInf;
@@ -48,19 +48,19 @@ inline void JointSAEProposal::update(double mu, double tau, double kappa, double
 		return R::qlnorm(p, mu, tau, lower, log);
 	};
 
-	vws::UnivariateHelper helper(df, pf, qf);
+	vws::univariate_helper helper(df, pf, qf);
 
 	// Update weight function in each region in the proposal
-	std::set<vws::RealConstRegion>::iterator itr = _regions.begin();
+	std::set<vws::real_const_region>::iterator itr = _regions.begin();
 	for (; itr != _regions.end(); ++itr) {
-		vws::RealConstRegion& reg = const_cast<vws::RealConstRegion&>(*itr);
+		vws::real_const_region& reg = const_cast<vws::real_const_region&>(*itr);
 		reg.set_w(w);
 		reg.set_helper(helper);
 		reg.init();
 	}
 }
 
-inline vws::RealConstRegion JointSAEProposal::supp(
+inline vws::real_const_region joint_sae_proposal::supp(
 	double mu,
 	double tau,
 	double kappa,
@@ -107,8 +107,8 @@ inline vws::RealConstRegion JointSAEProposal::supp(
 		return log ? out : exp(out);
 	};
 
-	vws::UnivariateHelper helper(df, pf, qf);
-	vws::RealConstRegion out(0, R_PosInf, w, helper, maxopt, minopt);
+	vws::univariate_helper helper(df, pf, qf);
+	vws::real_const_region out(0, R_PosInf, w, helper, maxopt, minopt);
 	return out;
 }
 

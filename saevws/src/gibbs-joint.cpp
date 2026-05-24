@@ -1,11 +1,6 @@
 #include <RcppArmadillo.h>
 #include <chrono>
-#include "local-util.h"
-#include "joint-sae-proposal.h"
-#include "joint-vws-output.h"
-#include "joint-vws-basic.h"
-#include "joint-vws-tune.h"
-#include "arms-joint-functor.h"
+#include "saevws.h"
 #include "armspp"
 
 const double SEC_PER_MICROSEC = 1e-6;
@@ -93,9 +88,9 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	// }
 
 	// This is only used if inner_method == "vws-tune"
-	std::vector<JointSAEMajorizer> proposals;
+	std::vector<joint_sae_majorizer> proposals;
 	for (unsigned int i = 0; i < m; i++) {
-		JointSAEMajorizer maj;
+		joint_sae_majorizer maj;
 		proposals.push_back(maj);
 	}
 
@@ -220,8 +215,8 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				*/
 				for (unsigned int i = 0; i < m; i++) {
 					const Rcpp::NumericVector& points = Rcpp::wrap(arms_quantiles.row(i));
-					ARMSJointFunctor armsfun(Zgamma(i), tau(i), kappa(i), lambda(i));
-					armspp::ARMS<double, ARMSJointFunctor, Rcpp::NumericVector::const_iterator>
+					arms_joint_functor armsfun(Zgamma(i), tau(i), kappa(i), lambda(i));
+					armspp::ARMS<double, arms_joint_functor, Rcpp::NumericVector::const_iterator>
 					sigma2_dist(
 						armsfun,  // log-density functor
 						0,        // lower
@@ -253,7 +248,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				// }
 
 				// Self-tuned VWS using customized implementation
-				const JointVWSOutput& vws_out = joint_vws_tune(proposals,
+				const joint_vws_output& vws_out = joint_vws_tune(proposals,
 				 	Zgamma, std::sqrt(tau2), kappa, lambda, max_rejects,
 				 	tol_suff, tol_merge);
 				sigma2 = vws_out.sigma2;
@@ -270,7 +265,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				// }
 
 				// VWS without tuning using customized implementation
-				const JointVWSOutput& vws_out = joint_vws_basic(Zgamma,
+				const joint_vws_output& vws_out = joint_vws_basic(Zgamma,
 					std::sqrt(tau2), kappa, lambda, N, tol_suff, max_rejects);
 				sigma2 = vws_out.sigma2;
 				sigma2_rejections_hist(rep) = arma::sum(vws_out.rejects);

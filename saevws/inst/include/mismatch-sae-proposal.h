@@ -1,35 +1,35 @@
-#ifndef MISMATCH_SAE_PROPOSAL_H
-#define MISMATCH_SAE_PROPOSAL_H
+#ifndef SAEVWS_MISMATCH_SAE_PROPOSAL_H
+#define SAEVWS_MISMATCH_SAE_PROPOSAL_H
 
 // [[Rcpp::depends(vws, fntl)]]
 #include "vws.h"
 
 /*
-* Define a subclass of FMMProposal that we can expose to R via Modules
+* Define a subclass of fmm_proposal that we can expose to R via Modules
 */
-class MismatchSAEProposal : public vws::FMMProposal<double, vws::RealConstRegion>
+class mismatch_sae_proposal : public vws::fmm_proposal<double, vws::real_const_region>
 {
 public:
-	MismatchSAEProposal(
+	mismatch_sae_proposal(
 		double y,
 		double sigma,
 		double xbeta,
 		double tau)
-	: vws::FMMProposal<double, vws::RealConstRegion>(supp(y, sigma, xbeta, tau))
+	: vws::fmm_proposal<double, vws::real_const_region>(supp(y, sigma, xbeta, tau))
 	{
 	}
 
 	void update(double xbeta, double tau);
 
 private:
-	vws::RealConstRegion supp(double y, double sigma, double xbeta, double tau);
+	vws::real_const_region supp(double y, double sigma, double xbeta, double tau);
 };
 
 /*
 * Implementation of member functions is below
 */
 
-inline void MismatchSAEProposal::update(double xbeta, double tau)
+inline void mismatch_sae_proposal::update(double xbeta, double tau)
 {
 	const vws::dfdb& w = [=](double mu, bool log = true) -> double {
 		double out = (mu > 0) ? R::dlnorm(mu, xbeta, tau, true) : R_NegInf;
@@ -58,9 +58,9 @@ inline void MismatchSAEProposal::update(double xbeta, double tau)
 	};
 
 	// Update weight function in each region in the proposal
-	std::set<vws::RealConstRegion>::iterator itr = _regions.begin();
+	std::set<vws::real_const_region>::iterator itr = _regions.begin();
 	for (; itr != _regions.end(); ++itr) {
-		vws::RealConstRegion& reg = const_cast<vws::RealConstRegion&>(*itr);
+		vws::real_const_region& reg = const_cast<vws::real_const_region&>(*itr);
 		reg.set_w(w);
 		reg.set_maxopt(maxopt);
 		reg.set_minopt(minopt);
@@ -68,7 +68,7 @@ inline void MismatchSAEProposal::update(double xbeta, double tau)
 	}
 }
 
-inline vws::RealConstRegion MismatchSAEProposal::supp(
+inline vws::real_const_region mismatch_sae_proposal::supp(
 	double y,
 	double sigma,
 	double xbeta,
@@ -112,8 +112,8 @@ inline vws::RealConstRegion MismatchSAEProposal::supp(
 		return log ? out : exp(out);
 	};
 
-	vws::UnivariateHelper helper(df, pf, qf);
-	vws::RealConstRegion out(0, R_PosInf, w, helper, maxopt, minopt);
+	vws::univariate_helper helper(df, pf, qf);
+	vws::real_const_region out(0, R_PosInf, w, helper, maxopt, minopt);
 	return out;
 }
 

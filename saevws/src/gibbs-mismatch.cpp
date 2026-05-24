@@ -1,8 +1,6 @@
 #include <RcppArmadillo.h>
 #include <chrono>
-#include "local-util.h"
-#include "mismatch-sae-proposal.h"
-#include "arms-mismatch-functor.h"
+#include "saevws.h"
 #include "armspp"
 
 const double SEC_PER_MICROSEC = 1e-6;
@@ -64,9 +62,9 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	arma::vec Xbeta = X * beta;
 
 	// This is only used if vws_method == "vws-tune"
-	std::vector<MismatchSAEProposal> proposals;
+	std::vector<mismatch_sae_proposal> proposals;
 	for (unsigned int i = 0; i < m; i++) {
-	 	MismatchSAEProposal x(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
+	 	mismatch_sae_proposal x(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
 	 	proposals.push_back(x);
 	}
 
@@ -131,8 +129,8 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				*/
 				for (unsigned int i = 0; i < m; i++) {
 					const Rcpp::NumericVector& points = Rcpp::wrap(arms_quantiles.row(i));
-					ARMSMismatchFunctor armsfun(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
-					armspp::ARMS<double, ARMSMismatchFunctor, Rcpp::NumericVector::const_iterator>
+					arms_mismatch_functor armsfun(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
+					armspp::ARMS<double, arms_mismatch_functor, Rcpp::NumericVector::const_iterator>
 					mu_dist(
 						armsfun,  // log-density functor
 						0,        // lower
@@ -166,7 +164,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 			} else if (strcmp(inner_method.get_cstring(), "vws-basic") == 0) {
 				// VWS without tuning using vws package
 				for (unsigned int i = 0; i < m; i++) {
-					MismatchSAEProposal h(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
+					mismatch_sae_proposal h(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
 			    	h.refine(N - 1, tol_suff);
 			    	const auto& vws_out = vws::rejection(h, 1, args);
 					mu(i) = vws_out.draws[0];

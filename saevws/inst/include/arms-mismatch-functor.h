@@ -1,9 +1,11 @@
 #ifndef ARMS_MISMATCH_FUNCTOR
 #define ARMS_MISMATCH_FUNCTOR
 
-class ARMSMismatchFunctor {
+#include "local-util.h"
+
+class arms_mismatch_functor {
 public:
-	ARMSMismatchFunctor(double y, double sigma, double xbeta, double tau)
+	arms_mismatch_functor(double y, double sigma, double xbeta, double tau)
 		: _y(y), _sigma(sigma), _xbeta(xbeta), _tau(tau), _nEvaluations(0)
 	{
 	}

@@ -1,9 +1,11 @@
 #ifndef ARMS_JOINT_FUNCTOR
 #define ARMS_JOINT_FUNCTOR
 
-class ARMSJointFunctor {
+#include "local-util.h"
+
+class arms_joint_functor {
 public:
-	ARMSJointFunctor(double mu, double tau, double kappa, double lambda)
+	arms_joint_functor(double mu, double tau, double kappa, double lambda)
 		: _mu(mu), _tau(tau), _kappa(kappa), _lambda(lambda), _nEvaluations(0)
 	{
 	}
