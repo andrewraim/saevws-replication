@@ -30,6 +30,10 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	double tol_suff = inner_ctrl["tol_suff"];
 	double tol_merge = inner_ctrl["tol_merge"];
 	unsigned int N = inner_ctrl["N"];
+	double am_varprop_init = inner_ctrl["am_varprop_init"];
+	double am_varprop_c = inner_ctrl["am_varprop_c"];
+	double am_varprop_eps = inner_ctrl["am_varprop_eps"];
+
 
 	unsigned int rep_keep = 0;
 	unsigned int R_keep = std::ceil((R - burn) / double(thin));
@@ -74,6 +78,14 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	arms_quantiles.col(0).fill(0.1);
 	arms_quantiles.col(1).fill(1);
 	arms_quantiles.col(2).fill(5);
+
+	// This block is only used if inner_method == "am"
+	arma::vec mu_mean(m);
+	arma::vec mu_g(m);
+	arma::vec mu_varprop(m);
+	mu_mean.fill(0);
+	mu_g.fill(0);
+	mu_varprop.fill(am_varprop_init);
 
 	// Set up fixed parameters
 	stopifnot(fixed.inherits("fixed_mismatch"), "fixed inherits from fixed_mismatch");
@@ -120,6 +132,64 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				mu(idx) = mu_prop.elem(idx);
 				mu_rejections_hist(rep) = m - idx.n_elem;
 				mu_rejections_areas += (arma::log(u) >= log_ratio);
+				mu_tunes_hist(rep) = 0;
+			} else if (strcmp(inner_method.get_cstring(), "am") == 0) {
+				/*
+				* Adaptive rejection sampling (SCAM) from Haario, Saksman, & Tamminen (2005)
+				*/
+
+				for (unsigned int i = 0; i < m; i++) {
+					double mu_prev = mu(i);
+					double u = R::runif(0, 1);
+					double mu_prop = R::rnorm(mu_prev, std::sqrt(mu_varprop(i)));
+					double log_num = R::dlnorm(mu_prop, Xbeta(i), std::sqrt(tau2), true) +
+						R::dnorm(mu_prop, y(i), sigma(i), true);
+					double log_den = R::dlnorm(mu_prev, Xbeta(i), std::sqrt(tau2), true) +
+						R::dnorm(mu_prev, y(i), sigma(i), true);
+					double log_ratio = std::min(log_num - log_den, 0.0);
+					if (std::log(u) < log_ratio) {
+						mu(i) = mu_prop;
+					} else {
+						mu_rejections_hist(rep)++;
+						mu_rejections_areas(i)++;
+					}
+
+					/*
+					if (i == 0) {
+						Rprintf("%d: sigma2_mean(0) = %f\n", rep, sigma2_mean(i));
+						Rprintf("%d: sigma2_g(0) = %f\n", rep, sigma2_g(i));
+						Rprintf("%d: sigma2_varprop(0) = %f\n", rep, sigma2_varprop(i));
+						Rprintf("%d: Proposed u = %f\n", rep, u);
+						Rprintf("%d: phi = %f\n", rep, phi);
+						Rprintf("%d: phi_prop = %f\n", rep, phi_prop);
+						Rprintf("%d: log_num = %f\n", rep, log_num);
+						Rprintf("%d: log_den = %f\n", rep, log_den);
+						Rprintf("%d: accept: %d\n", rep, std::log(u) < log_ratio);
+						Rprintf("%d: sigma2(i): %g\n", rep, sigma2(i));
+					}
+					*/
+
+					// Adapt the proposal distribution
+					double t = rep;
+					double mu_mean_prev = mu_mean(i);
+					mu_mean(i) = (t * mu_mean(i) + mu(i)) / (t + 1);
+
+					if (t == 0) {
+						mu_g(i) = std::pow(mu(i), 2) / (t + 1);
+					} else  {
+						mu_g(i) = (t - 1) / t * mu_g(i) +
+							std::pow(mu_mean_prev, 2) +
+							std::pow(mu(i), 2) / t -
+							(t + 1) / t * std::pow(mu_mean(i), 2);
+					}
+
+					if (rep < 10) {
+						mu_varprop(i) = am_varprop_init;
+					} else if (rep < burn) {
+						mu_varprop(i) = std::pow(am_varprop_c, 2)  * (mu_g(i) + am_varprop_eps);
+					}
+				}
+
 				mu_tunes_hist(rep) = 0;
 			} else if (strcmp(inner_method.get_cstring(), "arms") == 0) {
 				/*
