@@ -9,8 +9,11 @@ control_inner(
   tol_suff = 0.01,
   tol_merge = exp(-100),
   max_rejects = 1e+06,
-  method = c("vws-tune", "vws-basic", "imh", "arms"),
-  N = 50
+  method = c("vws-tune", "vws-basic", "imh", "arms", "am"),
+  N = 50,
+  am_varprop_init = 25,
+  am_varprop_c = 2.4,
+  am_varprop_eps = 0.05
 )
 }
 \arguments{
@@ -22,8 +25,17 @@ control_inner(
 conditional per Gibbs step. The sampler halts when this is exceeded.}
 
 \item{method}{Can be independent Metropolis step (\code{"imh"}), self-tuned VWS
-(\code{"vws-tune"}), or basic VWS without self-tuning (\code{"vws-basic"}) for the
-\eqn{\sigma_i^2} draws.}
+(\code{"vws-tune"}), basic VWS without self-tuning (\code{"vws-basic"}) for the
+\eqn{\sigma_i^2} draws, Adaptive Rejection Metropolis Sampling (\code{"arms"}),
+or Adaptive Metropolis (\code{"am"}).}
+
+\item{N}{Maximum number of refinements for VWS without self-tuning.}
+
+\item{am_varprop_init}{TBD}
+
+\item{am_varprop_c}{TBD}
+
+\item{am_varprop_eps}{TBD}
 }
 \value{
 A list with results.

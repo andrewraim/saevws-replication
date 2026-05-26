@@ -37,6 +37,9 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	double tol_suff = inner_ctrl["tol_suff"];
 	double tol_merge = inner_ctrl["tol_merge"];
 	unsigned int N = inner_ctrl["N"];
+	double am_varprop_init = inner_ctrl["am_varprop_init"];
+	double am_varprop_c = inner_ctrl["am_varprop_c"];
+	double am_varprop_eps = inner_ctrl["am_varprop_eps"];
 
 	unsigned int rep_keep = 0;
 	unsigned int R_keep = std::ceil((R - burn) / double(thin));
@@ -80,26 +83,34 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	arma::vec tau(m);
 	tau.fill(std::sqrt(tau2));
 
-	// This is only used if vws_method == "vws-tune"
+	// This block is only used if vws_method == "vws-tune"
 	// std::vector<SAEProposal> proposals;
 	// for (unsigned int i = 0; i < m; i++) {
 	// 	SAEProposal x(Zgamma(i), tau(i), kappa(i), lambda(i));
 	// 	proposals.push_back(x);
 	// }
 
-	// This is only used if inner_method == "vws-tune"
+	// This block is only used if inner_method == "vws-tune"
 	std::vector<joint_sae_majorizer> proposals;
 	for (unsigned int i = 0; i < m; i++) {
 		joint_sae_majorizer maj;
 		proposals.push_back(maj);
 	}
 
-	// This is only used if inner_method == "arms"
+	// This block is only used if inner_method == "arms"
 	std::mt19937_64 rng(static_cast<uint_fast64_t>(UINT_FAST64_MAX * R::unif_rand()));
 	arma::mat arms_quantiles(m, 3);
 	arms_quantiles.col(0).fill(0.1);
 	arms_quantiles.col(1).fill(1);
 	arms_quantiles.col(2).fill(5);
+
+	// This block is only used if inner_method == "am"
+	arma::vec sigma2_mean(m);
+	arma::vec sigma2_g(m);
+	arma::vec sigma2_varprop(m);
+	sigma2_mean.fill(0);
+	sigma2_g.fill(0);
+	sigma2_varprop.fill(am_varprop_init);
 
 	// Set up fixed parameters
 	stopifnot(fixed.inherits("fixed_joint"), "fixed inherits from fixed_joint");
@@ -207,8 +218,71 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				sigma2_rejections_hist(rep) = m - idx.n_elem;
 				sigma2_rejections_areas += (arma::log(u) >= log_ratio);
 				sigma2_tunes_hist(rep) = 0;
+			} else if (strcmp(inner_method.get_cstring(), "am") == 0) {
+				/*
+				* Adaptive rejection sampling (SCAM) from Haario, Saksman, & Tamminen (2005)
+				*/
+
+				for (unsigned int i = 0; i < m; i++) {
+					double sigma2_prev = sigma2(i);
+					double u = R::runif(0, 1);
+					double phi = std::log(sigma2_prev);
+					double phi_prop = R::rnorm(phi, std::sqrt(sigma2_varprop(i)));
+					double sigma2_prop = std::exp(phi_prop);
+					double log_num = R::dlnorm(sigma2_prop, Zgamma(i), tau(i), true) +
+						d_invgamma(sigma2_prop, kappa(i), lambda(i), true) +
+						phi_prop;
+					double log_den = R::dlnorm(sigma2_prev, Zgamma(i), tau(i), true) +
+						d_invgamma(sigma2_prev, kappa(i), lambda(i), true) +
+						phi;
+					double log_ratio = std::min(log_num - log_den, 0.0);
+					if (std::log(u) < log_ratio) {
+						sigma2(i) = sigma2_prop;
+					} else {
+						sigma2_rejections_hist(rep)++;
+						sigma2_rejections_areas(i)++;
+					}
+
+					/*
+					if (i == 0) {
+						Rprintf("%d: sigma2_mean(0) = %f\n", rep, sigma2_mean(i));
+						Rprintf("%d: sigma2_g(0) = %f\n", rep, sigma2_g(i));
+						Rprintf("%d: sigma2_varprop(0) = %f\n", rep, sigma2_varprop(i));
+						Rprintf("%d: Proposed u = %f\n", rep, u);
+						Rprintf("%d: phi = %f\n", rep, phi);
+						Rprintf("%d: phi_prop = %f\n", rep, phi_prop);
+						Rprintf("%d: log_num = %f\n", rep, log_num);
+						Rprintf("%d: log_den = %f\n", rep, log_den);
+						Rprintf("%d: accept: %d\n", rep, std::log(u) < log_ratio);
+						Rprintf("%d: sigma2(i): %g\n", rep, sigma2(i));
+					}
+					*/
+
+					// Adapt the proposal distribution
+					double t = rep;
+					double sigma2_mean_prev = sigma2_mean(i);
+					sigma2_mean(i) = (t * sigma2_mean(i) + sigma2(i)) / (t + 1);
+
+					if (t == 0) {
+						sigma2_g(i) = std::pow(sigma2(i), 2) / (t + 1);
+					} else  {
+						sigma2_g(i) = (t - 1) / t * sigma2_g(i) +
+							std::pow(sigma2_mean_prev, 2) +
+							std::pow(sigma2(i), 2) / t -
+							(t + 1) / t * std::pow(sigma2_mean(i), 2);
+					}
+
+					if (rep < 10) {
+						sigma2_varprop(i) = am_varprop_init;
+					} else if (rep < burn) {
+						sigma2_varprop(i) = std::pow(am_varprop_c, 2)  * (sigma2_g(i) + am_varprop_eps);
+					}
+				}
+
+				sigma2_tunes_hist(rep) = 0;
 			} else if (strcmp(inner_method.get_cstring(), "arms") == 0) {
 				/*
+				 * Adaptive Rejection Metropolis Sampling (ARMS)
 				 * After sampling, grab a few quantiles from the proposal
 				 * to use in the next round of the Gibbs sampler. This is the
 				 * suggestion in Gilks et al (1992).
