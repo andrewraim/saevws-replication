@@ -5,12 +5,12 @@
 \title{Gibbs Sampler Inner Control}
 \usage{
 control_inner(
-  tol_refine = 0.01,
   tol_suff = 0.01,
   tol_merge = exp(-100),
   max_rejects = 1e+06,
   method = c("vws-tune", "vws-basic", "imh", "arms", "am"),
   N = 50,
+  last_tune = 1e+06,
   am_varprop_init = 25,
   am_varprop_c = 2.4,
   am_varprop_eps = 0.05
@@ -30,6 +30,8 @@ conditional per Gibbs step. The sampler halts when this is exceeded.}
 or Adaptive Metropolis (\code{"am"}).}
 
 \item{N}{Maximum number of refinements for VWS without self-tuning.}
+
+\item{last_tune}{TBD}
 
 \item{am_varprop_init}{TBD}
 

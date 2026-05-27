@@ -133,7 +133,7 @@ gibbs_mismatch = function(y, sigma, X,
 	control$save_latent = save_latent - 1
 
 	out = gibbs_mismatch_cpp(y, sigma, X, init, control, fixed)
-	class(out) = "fit_mismatch"
+	class(out) = "gibbs_mismatch"
 	return(out)
 }
 
@@ -146,7 +146,7 @@ gibbs_mismatch = function(y, sigma, X,
 #' @return A data frame with results.
 #'
 #' @export
-summary.fit_mismatch = function(object, pr = c(0.05, 0.95), ...)
+summary.gibbs_mismatch = function(object, pr = c(0.05, 0.95), ...)
 {
 	d = ncol(object$beta_hist)
 
@@ -185,7 +185,7 @@ summary.fit_mismatch = function(object, pr = c(0.05, 0.95), ...)
 #' @param ... Additional arguments.
 #'
 #' @export
-print.fit_mismatch = function(x, pr = c(0.05, 0.95), ...)
+print.gibbs_mismatch = function(x, pr = c(0.05, 0.95), ...)
 {
 	cat("Summary of fit for Mismatch SAE model\n")
 	print(summary(x, pr))
@@ -195,11 +195,11 @@ print.fit_mismatch = function(x, pr = c(0.05, 0.95), ...)
 		x$R, x$burn, x$thin, x$R_keep)
 
 	printf("Rejections in mu step: %d  Total proposals: %d  Rejection rate: %g%%\n",
-		sum(x$mu_rejections_hist),
-		sum(x$mu_rejections_hist) + x$R * x$m,
-		100 * sum(x$mu_rejections_hist) / (sum(x$mu_rejections_hist) + x$R*x$m))
+		sum(x$mu_rejects_hist),
+		sum(x$mu_rejects_hist) + x$R * x$m,
+		100 * sum(x$mu_rejects_hist) / (sum(x$mu_rejects_hist) + x$R*x$m))
 
-	printf("Avg regions in mu step: %g\n", sum(x$mu_knots_hist) / (x$R * x$m))
+	printf("Avg regions in mu step: %g\n", sum(x$mu_comps_hist) / (x$R * x$m))
 
 	cat("----\n")
 	printf("Elapsed time (Seconds):\n")

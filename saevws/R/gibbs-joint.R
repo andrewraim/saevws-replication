@@ -157,7 +157,7 @@ gibbs_joint = function(y, s2, X, Z, df,
 	control$save_latent = save_latent - 1
 
 	out = gibbs_joint_cpp(y, s2, X, Z, df, init, control, fixed)
-	class(out) = "fit_joint"
+	class(out) = "gibbs_joint"
 	return(out)
 }
 
@@ -170,7 +170,7 @@ gibbs_joint = function(y, s2, X, Z, df,
 #' @return A data frame with results.
 #'
 #' @export
-summary.fit_joint = function(object, pr = c(0.05, 0.95), ...)
+summary.gibbs_joint = function(object, pr = c(0.05, 0.95), ...)
 {
 	d1 = ncol(object$beta_hist)
 	d2 = ncol(object$gamma_hist)
@@ -226,7 +226,7 @@ summary.fit_joint = function(object, pr = c(0.05, 0.95), ...)
 #' @param ... Additional arguments.
 #'
 #' @export
-print.fit_joint = function(x, pr = c(0.05, 0.95), ...)
+print.gibbs_joint = function(x, pr = c(0.05, 0.95), ...)
 {
 	cat("Summary of fit for Joint SAE model\n")
 	print(summary(x, pr))
@@ -236,9 +236,9 @@ print.fit_joint = function(x, pr = c(0.05, 0.95), ...)
 		x$R, x$burn, x$thin, x$R_keep)
 
 	printf("Rejections in sigma2 step: %d  Total proposals: %d  Rejection rate: %g%%\n",
-		sum(x$sigma2_rejections_hist),
-		sum(x$sigma2_rejections_hist) + x$R * x$m,
-		100 * sum(x$sigma2_rejections_hist) / (sum(x$sigma2_rejections_hist) + x$R*x$m))
+		sum(x$sigma2_rejects_hist),
+		sum(x$sigma2_rejects_hist) + x$R * x$m,
+		100 * sum(x$sigma2_rejects_hist) / (sum(x$sigma2_rejects_hist) + x$R*x$m))
 
 	printf("Avg regions in sigma2 step: %g\n", sum(x$sigma2_knots_hist) / (x$R * x$m))
 

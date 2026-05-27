@@ -15,7 +15,7 @@ alpha = 0.10
 # Args for VWG
 tol_suff = 0.85
 #tol_merge = 0.0001
-tol_merge = 0.05
+tol_merge = 0.01
 
 # ----- Data setup -----
 ff = file.path("..", "data", "saipe.csv")
@@ -49,9 +49,75 @@ tau2_init = sigma(lm2_out)^2
 init = init_joint(m, d1, d2, beta = beta_init, gamma = gamma_init, sigma2 = s2,
 	phi2 = phi2_init, tau2 = tau2_init)
 
+# ----- Independent Metropolis within Gibbs -----
+inner_ctrl = control_inner(method = "imh")
+control = control_joint(R = 30000, burn = 28000, thin = 1, report = 1000,
+	inner = inner_ctrl, save_latent = seq_len(m))
+mwg_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
+print(mwg_out)
+
+# Sort areas by rejection count and plot them against some respective data
+hist(mwg_out$sigma2_rejects_areas)
+idx = order(mwg_out$sigma2_rejects_areas)
+plot(sort(mwg_out$sigma2_rejects_areas), y[idx])
+plot(sort(mwg_out$sigma2_rejects_areas), df[idx])
+plot(sort(mwg_out$sigma2_rejects_areas), s2[idx])
+
+## Convert any NaN values of ESS (i.e., no chain movement) to zero
+ess_mwg_sigma2 = ess(mwg_out$sigma2_hist)
+ess_mwg_sigma2[is.na(ess_mwg_sigma2)] = 0
+ess_mwg_theta = ess(mwg_out$theta_hist)
+quantile(ess_mwg_sigma2, probs)
+quantile(ess_mwg_theta, probs)
+
+par_mwg_mcmc = cbind(mwg_out$beta_hist, mwg_out$gamma_hist,
+	mwg_out$phi2_hist, mwg_out$tau2_hist)
+multiESS(mwg_out$beta_hist)
+multiESS(mwg_out$gamma_hist)
+ess(mwg_out$phi2_hist)
+ess(mwg_out$tau2_hist)
+multiESS(par_mwg_mcmc)
+
+# ----- Adaptive Metropolis within Gibbs -----
+inner_ctrl = control_inner(method = "am", am_varprop_init = 1)
+control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1000,
+	inner = inner_ctrl, save_latent = seq_len(m))
+am_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
+print(am_out)
+
+plot(am_out$beta_hist[,1], type = "l")
+plot(am_out$gamma_hist[,1], type = "l")
+plot(am_out$phi2_hist, type = "l")
+plot(am_out$tau2_hist, type = "l")
+
+ess_am_sigma2 = ess(am_out$sigma2_hist)
+ess_am_theta = ess(am_out$theta_hist)
+
+i = which.min(ess_am_sigma2)
+plot(am_out$sigma2_hist[,i], type = "l")
+
+hist(ess_am_sigma2)
+
+# ----- ARMS within Gibbs -----
+inner_ctrl = control_inner(method = "arms")
+control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
+	inner = inner_ctrl, save_latent = seq_len(m))
+arms_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
+print(arms_out)
+
+plot(arms_out$beta_hist[,1], type = "l")
+plot(arms_out$gamma_hist[,1], type = "l")
+plot(arms_out$phi2_hist, type = "l")
+plot(arms_out$tau2_hist, type = "l")
+
+ess_arms_sigma2 = ess(arms_out$sigma2_hist)
+ess_arms_theta = ess(arms_out$theta_hist)
+quantile(ess_arms_sigma2, probs)
+quantile(ess_arms_theta, probs)
+
 # ----- Self-tuned VWS within Gibbs (Version 1) -----
 inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
-	max_rejects = 1e6, method = "vws-tune", N = 50)
+	max_rejects = 1e6, method = "vws-tune", N = 50, last_tune = 100)
 control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
 	inner = inner_ctrl, save_latent = seq_len(m))
 vwg_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
@@ -75,71 +141,8 @@ ess(vwg_out$phi2_hist)
 ess(vwg_out$tau2_hist)
 multiESS(par_vwg_mcmc)
 
-# ----- ARMS within Gibbs -----
-inner_ctrl = control_inner(method = "arms")
-control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
-	inner = inner_ctrl, save_latent = seq_len(m))
-arms_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
-print(arms_out)
-
-plot(arms_out$beta_hist[,1], type = "l")
-plot(arms_out$gamma_hist[,1], type = "l")
-plot(arms_out$phi2_hist, type = "l")
-plot(arms_out$tau2_hist, type = "l")
-
-ess_arms_sigma2 = ess(arms_out$sigma2_hist)
-ess_arms_theta = ess(arms_out$theta_hist)
-quantile(ess_arms_sigma2, probs)
-quantile(ess_arms_theta, probs)
-
-# ----- Adaptive Metropolis within Gibbs -----
-inner_ctrl = control_inner(method = "am", am_varprop_init = 1)
-# control = control_joint(R = 20, burn = 19, thin = 1, report = 1,
-control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1000,
-	inner = inner_ctrl, save_latent = seq_len(m))
-am_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
-print(am_out)
-
-plot(am_out$beta_hist[,1], type = "l")
-plot(am_out$gamma_hist[,1], type = "l")
-plot(am_out$phi2_hist, type = "l")
-plot(am_out$tau2_hist, type = "l")
-
-plot(am_out$sigma2_hist[,2583], type = "l")
-
-ess_am_sigma2 = ess(am_out$sigma2_hist)
-ess_am_theta = ess(am_out$theta_hist)
-
-hist(am_out$sigma2_rejections_areas)
-
-# ----- Metropolis within Gibbs -----
-inner_ctrl = control_inner(method = "imh")
-control = control_joint(R = 30000, burn = 28000, thin = 1, report = 1000,
-	inner = inner_ctrl, save_latent = seq_len(m))
-mwg_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
-print(mwg_out)
-
-# Sort areas by rejection count and plot them against some respective data
-hist(mwg_out$sigma2_rejections_areas)
-idx = order(mwg_out$sigma2_rejections_areas)
-plot(sort(mwg_out$sigma2_rejections_areas), y[idx])
-plot(sort(mwg_out$sigma2_rejections_areas), df[idx])
-plot(sort(mwg_out$sigma2_rejections_areas), s2[idx])
-
-## Convert any NaN values of ESS (i.e., no chain movement) to zero
-ess_mwg_sigma2 = ess(mwg_out$sigma2_hist)
-ess_mwg_sigma2[is.na(ess_mwg_sigma2)] = 0
-ess_mwg_theta = ess(mwg_out$theta_hist)
-quantile(ess_mwg_sigma2, probs)
-quantile(ess_mwg_theta, probs)
-
-par_mwg_mcmc = cbind(mwg_out$beta_hist, mwg_out$gamma_hist,
-	mwg_out$phi2_hist, mwg_out$tau2_hist)
-multiESS(mwg_out$beta_hist)
-multiESS(mwg_out$gamma_hist)
-ess(mwg_out$phi2_hist)
-ess(mwg_out$tau2_hist)
-multiESS(par_mwg_mcmc)
+i = which.min(ess_vwg_sigma2)
+plot(vwg_out$sigma2_hist[,i], type = "l")
 
 # ----- Fit Fay-Herriot with Gibbs sampler -----
 ctrl_fh = control_inner(method = "imh")
@@ -240,6 +243,30 @@ sigma2_ci_mwg = apply(mwg_out$sigma2_hist, 2, quantile, probs = c(alpha/2, 1 - a
 sigma2_ci_vwg = apply(vwg_out$sigma2_hist, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
 sigma2_width_mwg = apply(sigma2_ci_mwg, 1, diff)
 sigma2_width_vwg = apply(sigma2_ci_vwg, 1, diff)
+
+# Plot number of tuned VWS proposals by iteration
+data.frame(tuned = vwg_out$sigma2_tuned_hist) %>%
+	mutate(iter = row_number()) %>%
+	filter(iter > 100) %>%
+	ggplot() +
+	geom_line(aes(iter, tuned)) +
+	geom_rect(xmin = 0, xmax = 100,  ymin = 0,  ymax = Inf, fill = "red") +
+	scale_y_continuous(breaks = seq(0, 95, by = 5), minor_breaks = NULL) +
+	xlab("Iteration") +
+	ylab("Number of Tuned VWS Proposals") +
+	theme_minimal()
+
+# Plot number of VWS rejections per area by iteration
+data.frame(tuned = vwg_out$sigma2_rejects_hist / m) %>%
+	mutate(iter = row_number()) %>%
+	filter(iter > 100) %>%
+	ggplot() +
+	geom_line(aes(iter, tuned)) +
+	geom_rect(xmin = 0, xmax = 20, ymin = min(vwg_out$sigma2_rejects_hist / m),
+		ymax = Inf, fill = "red") +
+	xlab("Iteration") +
+	ylab("Number of VWS Rejections Per Area") +
+	theme_minimal()
 
 ## Compare sigma2 between MWG and VWG using scatter/hex plots
 
