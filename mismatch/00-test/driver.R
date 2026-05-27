@@ -57,7 +57,7 @@ abline(h = mu_true[i], lty = 2, col = "red")
 # ----- Fit the model using IMH -----
 init = init_mismatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "imh")
-control = control_mismatch(R = 30000, burn = 20000, thin = 1, report = 1000,
+control = control_mismatch(R = 30000, burn = 20000, thin = 1, report = 5000,
 	save_latent = 1:m, inner = inner)
 fixed = fixed_mismatch(mu = FALSE)
 gibbs_imh = gibbs_mismatch(y, sigma, X, init, control, fixed)
