@@ -74,6 +74,26 @@ i = which.min(ess_imh)
 plot(gibbs_imh$mu_hist[,i], type = "l")
 abline(h = mu_true[i], lty = 2, col = "red")
 
+# ----- Fit the model using AM -----
+init = init_mismatch(m, d = ncol(X), mu = mu_true)
+inner = control_inner(method = "am", am_varprop_init = 25)
+control = control_mismatch(R = 10000, burn = 8000, thin = 1, report = 1000,
+	save_latent = 1:m, inner = inner)
+fixed = fixed_mismatch(mu = FALSE)
+gibbs_am = gibbs_mismatch(y, sigma, X, init, control, fixed)
+print(gibbs_am)
+
+plot(gibbs_am$beta_hist[,1], type = "l")
+plot(gibbs_am$beta_hist[,2], type = "l")
+plot(gibbs_am$tau2_hist, type = "l")
+
+ess_am = ess(gibbs_am$mu_hist)
+hist(ess_am)
+i = which.min(ess_am)
+
+plot(gibbs_am$mu_hist[,i], type = "l")
+abline(h = mu_true[i], lty = 2, col = "red")
+
 # ----- Fit the model using ARMS -----
 init = init_mismatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "arms")

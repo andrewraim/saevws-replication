@@ -92,6 +92,26 @@ ess_arms_theta = ess(arms_out$theta_hist)
 quantile(ess_arms_sigma2, probs)
 quantile(ess_arms_theta, probs)
 
+# ----- Adaptive Metropolis within Gibbs -----
+inner_ctrl = control_inner(method = "am", am_varprop_init = 1)
+# control = control_joint(R = 20, burn = 19, thin = 1, report = 1,
+control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1000,
+	inner = inner_ctrl, save_latent = seq_len(m))
+am_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
+print(am_out)
+
+plot(am_out$beta_hist[,1], type = "l")
+plot(am_out$gamma_hist[,1], type = "l")
+plot(am_out$phi2_hist, type = "l")
+plot(am_out$tau2_hist, type = "l")
+
+plot(am_out$sigma2_hist[,2583], type = "l")
+
+ess_am_sigma2 = ess(am_out$sigma2_hist)
+ess_am_theta = ess(am_out$theta_hist)
+
+hist(am_out$sigma2_rejections_areas)
+
 # ----- Metropolis within Gibbs -----
 inner_ctrl = control_inner(method = "imh")
 control = control_joint(R = 30000, burn = 28000, thin = 1, report = 1000,
