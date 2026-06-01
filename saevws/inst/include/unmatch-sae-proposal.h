@@ -1,5 +1,5 @@
-#ifndef SAEVWS_MISMATCH_SAE_PROPOSAL_H
-#define SAEVWS_MISMATCH_SAE_PROPOSAL_H
+#ifndef SAEVWS_UNMATCH_SAE_PROPOSAL_H
+#define SAEVWS_UNMATCH_SAE_PROPOSAL_H
 
 // [[Rcpp::depends(vws, fntl)]]
 #include "vws.h"
@@ -7,10 +7,10 @@
 /*
 * Define a subclass of fmm_proposal that we can expose to R via Modules
 */
-class mismatch_sae_proposal : public vws::fmm_proposal<double, vws::real_const_region>
+class unmatch_sae_proposal : public vws::fmm_proposal<double, vws::real_const_region>
 {
 public:
-	mismatch_sae_proposal(
+	unmatch_sae_proposal(
 		double y,
 		double sigma,
 		double xbeta,
@@ -29,7 +29,7 @@ private:
 * Implementation of member functions is below
 */
 
-inline void mismatch_sae_proposal::update(double xbeta, double tau)
+inline void unmatch_sae_proposal::update(double xbeta, double tau)
 {
 	const vws::dfdb& w = [=](double mu, bool log = true) -> double {
 		double out = (mu > 0) ? R::dlnorm(mu, xbeta, tau, true) : R_NegInf;
@@ -68,7 +68,7 @@ inline void mismatch_sae_proposal::update(double xbeta, double tau)
 	}
 }
 
-inline vws::real_const_region mismatch_sae_proposal::supp(
+inline vws::real_const_region unmatch_sae_proposal::supp(
 	double y,
 	double sigma,
 	double xbeta,

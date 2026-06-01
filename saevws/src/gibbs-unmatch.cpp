@@ -6,7 +6,7 @@
 const double SEC_PER_MICROSEC = 1e-6;
 
 // [[Rcpp::export]]
-Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
+Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	const arma::mat& X, const Rcpp::List& init, const Rcpp::List& control,
 	const Rcpp::List& fixed)
 {
@@ -18,7 +18,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 
 	const arma::mat& XtX = crossprod(X);
 
-	stopifnot(control.inherits("control_mismatch"), "control inherits from control_mismatch");
+	stopifnot(control.inherits("control_unmatch"), "control inherits from control_unmatch");
 	unsigned int R = control["R"];
 	unsigned int burn = control["burn"];
 	unsigned int thin = control["thin"];
@@ -30,7 +30,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	double tol_suff = inner_ctrl["tol_suff"];
 	double tol_merge = inner_ctrl["tol_merge"];
 	unsigned int N = inner_ctrl["N"];
-	unsigned int last_tune = inner_ctrl["last_tune"];
+	unsigned int tune = inner_ctrl["tune"];
 	double am_varprop_init = inner_ctrl["am_varprop_init"];
 	double am_varprop_c = inner_ctrl["am_varprop_c"];
 	double am_varprop_eps = inner_ctrl["am_varprop_eps"];
@@ -62,7 +62,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	args.tol_merge = tol_merge;
 
 	// Set up initial values
-	stopifnot(init.inherits("init_mismatch"), "init inherits from init_mismatch");
+	stopifnot(init.inherits("init_unmatch"), "init inherits from init_unmatch");
 	arma::vec beta = init["beta"];
 	arma::vec mu = init["mu"];
 	double tau2 = init["tau2"];
@@ -70,9 +70,9 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	arma::vec Xbeta = X * beta;
 
 	// This is only used if vws_method == "vws-tune"
-	std::vector<mismatch_sae_proposal> proposals;
+	std::vector<unmatch_sae_proposal> proposals;
 	for (unsigned int i = 0; i < m; i++) {
-	 	mismatch_sae_proposal x(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
+	 	unmatch_sae_proposal x(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
 	 	proposals.push_back(x);
 	}
 
@@ -92,7 +92,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	mu_varprop.fill(am_varprop_init);
 
 	// Set up fixed parameters
-	stopifnot(fixed.inherits("fixed_mismatch"), "fixed inherits from fixed_mismatch");
+	stopifnot(fixed.inherits("fixed_unmatch"), "fixed inherits from fixed_unmatch");
 
 	// Note: flat prior is assumed for each parameter in this model
 
@@ -101,27 +101,33 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	double elapsed_tau2 = 0;
 	double elapsed_mu = 0;
 
-	for (unsigned int rep = 0; rep < R; rep++) {
+	for (unsigned int rep = 0; rep < R; rep++)
+	{
 		Rcpp::checkUserInterrupt();
 
 		if ((rep + 1) % report == 0) {
+			unsigned int s = (rep >= report - 1) ? rep - report + 1 : 0;
+			unsigned int rej = arma::sum(mu_rejects_hist(arma::span(s, rep)));
+
 			if (strcmp(inner_method.get_cstring(), "vws-tune") == 0)
 			{
-				logger("Starting rep %d with avg mu components %g\n",
-					rep + 1, avg_mu_comps);
+	        	logger("[%d] avg-regions: %0.4f  rejects: %d\n", rep + 1,
+	        		avg_mu_comps, rej);
 			} else {
-	        	logger("Starting rep %d\n", rep + 1);
+	        	logger("[%d] rejects: %d\n", rep + 1, rej);
 			}
 		}
+
 
 		// Draw [mu | rest]
 		if (!fixed["mu"]) {
 			auto st = std::chrono::system_clock::now();
-			// kappa = (df - 1) / 2.0;
-			// lambda = arma::pow(y - theta, 2) / 2.0 + df % s2 / 2.0;
 
 			if (strcmp(inner_method.get_cstring(), "imh") == 0) {
-				// Independent Metropolis sampling step from You & Rao (2002)
+				/*
+				* Independent Metropolis sampling step from You & Rao (2002)
+				*/
+
 				const arma::vec& u = arma::randu(m);
 				arma::vec mu_prop(m);
 				arma::vec log_num(m);
@@ -138,7 +144,8 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				mu_rejects_areas += (arma::log(u) >= log_ratio);
 			} else if (strcmp(inner_method.get_cstring(), "am") == 0) {
 				/*
-				* Adaptive rejection sampling (SCAM) from Haario, Saksman, & Tamminen (2005)
+				* Adaptive Metropolis (AM) sampling from Haario, Saksman, &
+				* Tamminen (2005)
 				*/
 
 				for (unsigned int i = 0; i < m; i++) {
@@ -174,7 +181,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 
 					if (rep < 10) {
 						mu_varprop(i) = am_varprop_init;
-					} else if (rep < burn) {
+					} else if (rep < tune) {
 						mu_varprop(i) = std::pow(am_varprop_c, 2)  * (mu_g(i) + am_varprop_eps);
 					}
 				}
@@ -186,8 +193,8 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				*/
 				for (unsigned int i = 0; i < m; i++) {
 					const Rcpp::NumericVector& points = Rcpp::wrap(arms_quantiles.row(i));
-					arms_mismatch_functor armsfun(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
-					armspp::ARMS<double, arms_mismatch_functor, Rcpp::NumericVector::const_iterator>
+					arms_unmatch_functor armsfun(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
+					armspp::ARMS<double, arms_unmatch_functor, Rcpp::NumericVector::const_iterator>
 					mu_dist(
 						armsfun,  // log-density functor
 						0,        // lower
@@ -212,23 +219,21 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				/*
 				* Self-tuned VWS using vws package
 				*
-				* Do self-tuning if iteration is before `last_tune` argument.
+				* Do self-tuning if iteration is before `tune` argument.
 				* Otherwise, update target parameter values and try to proceed
 				* with partitions from past tuning.
 				*/
-				if (rep < last_tune) {
-					for (unsigned int i = 0; i < m; i++) {
-						proposals[i].update(Xbeta(i), std::sqrt(tau2));
+				for (unsigned int i = 0; i < m; i++) {
+					proposals[i].update(Xbeta(i), std::sqrt(tau2));
+
+					if (rep < tune) {
 						const auto& vws_out = vws::rejection_tune(proposals[i], 1, args);
 						mu(i) = vws_out.draws[0];
 						mu_rejects_areas(i) += vws_out.rejects[0];
 						mu_rejects_hist(rep) += vws_out.rejects[0];
 						mu_tunes_hist(rep) += vws_out.tunes[0];
 						mu_tuned_hist(rep) += (vws_out.tunes[0] > 0);
-					}
-				} else {
-					for (unsigned int i = 0; i < m; i++) {
-						proposals[i].update(Xbeta(i), std::sqrt(tau2));
+					} else {
 						const auto& vws_out = vws::rejection(proposals[i], 1, args);
 						mu(i) = vws_out.draws[0];
 						mu_rejects_areas(i) += vws_out.rejects[0];
@@ -238,7 +243,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 			} else if (strcmp(inner_method.get_cstring(), "vws-basic") == 0) {
 				// VWS without tuning using vws package
 				for (unsigned int i = 0; i < m; i++) {
-					mismatch_sae_proposal h(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
+					unmatch_sae_proposal h(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
 			    	h.refine(N - 1, tol_suff);
 			    	const auto& vws_out = vws::rejection(h, 1, args);
 					mu(i) = vws_out.draws[0];

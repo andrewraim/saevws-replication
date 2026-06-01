@@ -1,4 +1,4 @@
-#' Control for Mismatch Model Gibbs Sampler
+#' Control for Unmatched Model Gibbs Sampler
 #'
 #' @param R Desired length of MCMC chain.
 #' @param burn Number of draws to burn.
@@ -15,19 +15,19 @@
 #' @return A list with results.
 #'
 #' @examples
-#' ctrl = control_mismatch()
+#' ctrl = control_unmatch()
 #'
 #' @export
-control_mismatch = function(R = 1000, burn = 0, thin = 1, report = R+1,
+control_unmatch = function(R = 1000, burn = 0, thin = 1, report = R+1,
 	save_latent = integer(0), inner = control_inner())
 {
 	ret = list(R = R, burn = burn, thin = thin, report = report,
 		save_latent = save_latent, inner = inner)
-	class(ret) = "control_mismatch"
+	class(ret) = "control_unmatch"
 	return(ret)
 }
 
-#' Gibbs Sampler Fixed Components for Mismatch Model
+#' Gibbs Sampler Fixed Components for Unmatched Model
 #'
 #' @param beta logical; if `TRUE`, Gibbs sampler will leave \eqn{\beta} fixed
 #' in MCMC.
@@ -39,17 +39,17 @@ control_mismatch = function(R = 1000, burn = 0, thin = 1, report = R+1,
 #' @return A list with results.
 #'
 #' @examples
-#' fixed = fixed_mismatch()
+#' fixed = fixed_unmatch()
 #'
 #' @export
-fixed_mismatch = function(beta = FALSE, tau2 = FALSE, mu = FALSE)
+fixed_unmatch = function(beta = FALSE, tau2 = FALSE, mu = FALSE)
 {
 	ret = list(beta = beta, tau2 = tau2, mu = mu)
-	class(ret) = "fixed_mismatch"
+	class(ret) = "fixed_unmatch"
 	return(ret)
 }
 
-#' Gibbs Sampler Initial Values for Mismatch Model
+#' Gibbs Sampler Initial Values for Unmatched Model
 #'
 #' @param m Number of subjects.
 #' @param d Dimension of \eqn{X} matrix.
@@ -60,10 +60,10 @@ fixed_mismatch = function(beta = FALSE, tau2 = FALSE, mu = FALSE)
 #' @return A list with results.
 #'
 #' @examples
-#' init = init_mismatch(500, d1 = 5, d2 = 2)
+#' init = init_unmatch(500, d1 = 5, d2 = 2)
 #'
 #' @export
-init_mismatch = function(m, d, beta = NULL, tau2 = NULL, mu = NULL)
+init_unmatch = function(m, d, beta = NULL, tau2 = NULL, mu = NULL)
 {
 	if (is.null(beta)) { beta = numeric(d)	}
 	if (is.null(tau2)) { tau2 = 1 }
@@ -74,20 +74,20 @@ init_mismatch = function(m, d, beta = NULL, tau2 = NULL, mu = NULL)
 	stopifnot(length(mu) == m)
 
 	ret = list(beta = beta, tau2 = tau2, mu = mu)
-	class(ret) = "init_mismatch"
+	class(ret) = "init_unmatch"
 	return(ret)
 }
 
-#' Gibbs Sampler for Mismatch Model
+#' Gibbs Sampler for Unmatched Model
 #'
 #' Run the Gibbs sampler.
 #'
 #' @param y Observed point estimates.
 #' @param X Design matrix for regression on point estimates.
 #' @param sigma Fixed variances.
-#' @param init Initial values from [init_mismatch].
-#' @param control Control object from [control_mismatch].
-#' @param fixed Fixed value indicators from [fixed_mismatch].
+#' @param init Initial values from [init_unmatch].
+#' @param control Control object from [control_unmatch].
+#' @param fixed Fixed value indicators from [fixed_unmatch].
 #'
 #' @return A list with results from the sampler.
 #'
@@ -115,9 +115,9 @@ init_mismatch = function(m, d, beta = NULL, tau2 = NULL, mu = NULL)
 #' }
 #'
 #' @export
-gibbs_mismatch = function(y, sigma, X,
-	init = init_mismatch(m = length(y), d = ncol(X)),
-	control = control_mismatch(), fixed = fixed_mismatch())
+gibbs_unmatch = function(y, sigma, X,
+	init = init_unmatch(m = length(y), d = ncol(X)),
+	control = control_unmatch(), fixed = fixed_unmatch())
 {
 	m = length(y)
 	stopifnot(m == length(sigma))
@@ -132,21 +132,21 @@ gibbs_mismatch = function(y, sigma, X,
 	stopifnot(all(save_latent %in% 1:m))
 	control$save_latent = save_latent - 1
 
-	out = gibbs_mismatch_cpp(y, sigma, X, init, control, fixed)
-	class(out) = "gibbs_mismatch"
+	out = gibbs_unmatch_cpp(y, sigma, X, init, control, fixed)
+	class(out) = "gibbs_unmatch"
 	return(out)
 }
 
-#' Gibbs Sampler Summary for Mismatch Model
+#' Gibbs Sampler Summary for Unmatched Model
 #'
-#' @param object A result from [gibbs_mismatch].
+#' @param object A result from [gibbs_unmatch].
 #' @param pr Vector of quantiles to present in summary.
 #' @param ... Additional arguments.
 #'
 #' @return A data frame with results.
 #'
 #' @export
-summary.gibbs_mismatch = function(object, pr = c(0.05, 0.95), ...)
+summary.gibbs_unmatch = function(object, pr = c(0.05, 0.95), ...)
 {
 	d = ncol(object$beta_hist)
 
@@ -178,16 +178,16 @@ summary.gibbs_mismatch = function(object, pr = c(0.05, 0.95), ...)
 	return(df)
 }
 
-#' Gibbs Sampler Print Summary for Mismatch Model
+#' Gibbs Sampler Print Summary for Unmatched Model
 #'
-#' @param x A result from [gibbs_mismatch].
+#' @param x A result from [gibbs_unmatch].
 #' @param pr Vector of quantiles to present in summary.
 #' @param ... Additional arguments.
 #'
 #' @export
-print.gibbs_mismatch = function(x, pr = c(0.05, 0.95), ...)
+print.gibbs_unmatch = function(x, pr = c(0.05, 0.95), ...)
 {
-	cat("Summary of fit for Mismatch SAE model\n")
+	cat("Summary of fit for Unmatched SAE model\n")
 	print(summary(x, pr))
 
 	cat("----\n")

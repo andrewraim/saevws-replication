@@ -37,14 +37,10 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	double tol_suff = inner_ctrl["tol_suff"];
 	double tol_merge = inner_ctrl["tol_merge"];
 	unsigned int N = inner_ctrl["N"];
-	unsigned int last_tune = inner_ctrl["last_tune"];
+	unsigned int tune = inner_ctrl["tune"];
 	double am_varprop_init = inner_ctrl["am_varprop_init"];
 	double am_varprop_c = inner_ctrl["am_varprop_c"];
 	double am_varprop_eps = inner_ctrl["am_varprop_eps"];
-
-	if (last_tune <= R) {
-		Rcpp::warning("last_tune not implemented for joint problem");
-	}
 
 	unsigned int rep_keep = 0;
 	unsigned int R_keep = std::ceil((R - burn) / double(thin));
@@ -86,15 +82,13 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	arma::vec Xbeta = X * beta;
 	arma::vec Zgamma = Z * gamma;
 
-	arma::vec kappa = (df - 1) / 2.0;
+	const arma::vec& kappa = (df - 1) / 2.0;
 	arma::vec lambda = arma::pow(y - theta, 2) / 2.0 + df % s2 / 2.0;
-	arma::vec tau(m);
-	tau.fill(std::sqrt(tau2));
 
 	// This block is only used if vws_method == "vws-tune"
 	std::vector<joint_sae_proposal> proposals;
 		for (unsigned int i = 0; i < m; i++) {
-		joint_sae_proposal x(Zgamma(i), tau(i), kappa(i), lambda(i));
+		joint_sae_proposal x(Zgamma(i), std::sqrt(tau2), kappa(i), lambda(i));
 		proposals.push_back(x);
 	}
 
@@ -126,16 +120,20 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	double elapsed_sigma2 = 0;
 	double elapsed_theta = 0;
 
-	for (unsigned int rep = 0; rep < R; rep++) {
+	for (unsigned int rep = 0; rep < R; rep++)
+	{
 		Rcpp::checkUserInterrupt();
 
 		if ((rep + 1) % report == 0) {
+			unsigned int s = (rep >= report - 1) ? rep - report + 1 : 0;
+			unsigned int rej = arma::sum(sigma2_rejects_hist(arma::span(s, rep)));
+
 			if (strcmp(inner_method.get_cstring(), "vws-tune") == 0)
 			{
-	        	logger("Starting rep %d with avg sigma2 knots %g\n",
-	        		rep + 1, avg_sigma2_comps);
+	        	logger("[%d] avg-regions: %0.4f  rejects: %d\n", rep + 1,
+	        		avg_sigma2_comps, rej);
 			} else {
-	        	logger("Starting rep %d\n", rep + 1);
+	        	logger("[%d] rejects: %d\n", rep + 1, rej);
 			}
 		}
 
@@ -192,7 +190,6 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 			double aa = m/2.0 - 1;
 			double bb = 1/2.0 * dot(log(sigma2) - Zgamma);
 			tau2 = r_invgamma(aa, bb);
-			tau.fill(std::sqrt(tau2));
 			auto et = std::chrono::system_clock::now();
 			auto td = std::chrono::duration_cast<std::chrono::microseconds>(et - st);
 			elapsed_tau2 += td.count() * SEC_PER_MICROSEC;
@@ -207,26 +204,28 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				/*
 				* Independent Metropolis sampling step from You (2021)
 				*/
-				const arma::vec& u = arma::randu(m);
-				arma::vec sigma2_prop(m);
+
 				for (unsigned int i = 0; i < m; i++) {
-					sigma2_prop(i) = r_invgamma(kappa(i), lambda(i));
+					double u = R::runif(0, 1);
+					double sigma2_prop = r_invgamma(kappa(i), lambda(i));
+					double log_num = R::dlnorm(sigma2_prop, Zgamma(i), std::sqrt(tau2), true);
+					double log_den = R::dlnorm(sigma2(i), Zgamma(i), std::sqrt(tau2), true);
+					const double log_ratio = std::min(log_num - log_den, 0.0);
+					if (std::log(u) < log_ratio) {
+						sigma2(i) = sigma2_prop;
+					} else {
+						sigma2_rejects_hist(rep)++;
+						sigma2_rejects_areas(i)++;
+					}
 				}
-				const arma::vec& log_num = dlnorm(sigma2_prop, Zgamma, tau, true);
-				const arma::vec& log_den = dlnorm(sigma2, Zgamma, tau, true);
-				const arma::vec& log_ratio = arma::min(log_num - log_den, arma::zeros(m));
-				const arma::uvec& idx = arma::find(arma::log(u) < log_ratio);
-				sigma2(idx) = sigma2_prop.elem(idx);
-				sigma2_rejects_hist(rep) = m - idx.n_elem;
-				sigma2_rejects_areas += (arma::log(u) >= log_ratio);
 			} else if (strcmp(inner_method.get_cstring(), "am") == 0) {
 				/*
-				* Adaptive rejection sampling (SCAM) from Haario, Saksman, &
+				* Adaptive Metropolis (AM) sampling from Haario, Saksman, &
 				* Tamminen (2005).
 				*
 				* Adjust the numerator and denominator with the Jacobian of the
 				* transformation, since we exponentiate the candidate (which is
-				* real-valued)
+				* real-valued).
 				*/
 
 				for (unsigned int i = 0; i < m; i++) {
@@ -235,10 +234,10 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 					double phi = std::log(sigma2_prev);
 					double phi_prop = R::rnorm(phi, std::sqrt(sigma2_varprop(i)));
 					double sigma2_prop = std::exp(phi_prop);
-					double log_num = R::dlnorm(sigma2_prop, Zgamma(i), tau(i), true) +
+					double log_num = R::dlnorm(sigma2_prop, Zgamma(i), std::sqrt(tau2), true) +
 						d_invgamma(sigma2_prop, kappa(i), lambda(i), true) +
 						phi_prop;
-					double log_den = R::dlnorm(sigma2_prev, Zgamma(i), tau(i), true) +
+					double log_den = R::dlnorm(sigma2_prev, Zgamma(i), std::sqrt(tau2), true) +
 						d_invgamma(sigma2_prev, kappa(i), lambda(i), true) +
 						phi;
 					double log_ratio = std::min(log_num - log_den, 0.0);
@@ -265,7 +264,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 
 					if (rep < 10) {
 						sigma2_varprop(i) = am_varprop_init;
-					} else if (rep < burn) {
+					} else if (rep < tune) {
 						sigma2_varprop(i) = std::pow(am_varprop_c, 2)  * (sigma2_g(i) + am_varprop_eps);
 					}
 				}
@@ -278,7 +277,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				*/
 				for (unsigned int i = 0; i < m; i++) {
 					const Rcpp::NumericVector& points = Rcpp::wrap(arms_quantiles.row(i));
-					arms_joint_functor armsfun(Zgamma(i), tau(i), kappa(i), lambda(i));
+					arms_joint_functor armsfun(Zgamma(i), std::sqrt(tau2), kappa(i), lambda(i));
 					armspp::ARMS<double, arms_joint_functor, Rcpp::NumericVector::const_iterator>
 					sigma2_dist(
 						armsfun,  // log-density functor
@@ -304,7 +303,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				/*
 				* Self-tuned VWS using vws package
 				*
-				* Do self-tuning if iteration is before `last_tune` argument.
+				* Do self-tuning if iteration is before `tune` argument.
 				* Otherwise, update target parameter values and try to proceed
 				* with partitions from past tuning.
 				*
@@ -312,31 +311,64 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				* the proposal will work as an envelope for rejection sampling.
 				*/
 
-				if (rep < last_tune) {
-					for (unsigned int i = 0; i < m; i++) {
-						proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
+				for (unsigned int i = 0; i < m; i++) {
+					proposals[i].update(Zgamma(i), std::sqrt(tau2), kappa(i), lambda(i));
+
+					if (rep < tune) {
 						const auto& vws_out = vws::rejection_tune(proposals[i], 1, args);
-						sigma2 = vws_out.draws[0];
+						sigma2(i) = vws_out.draws[0];
 						sigma2_rejects_hist(rep) += vws_out.rejects[0];
+						sigma2_rejects_areas(i) += vws_out.rejects[0];
 						sigma2_tunes_hist(rep) += vws_out.tunes[0];
 						sigma2_tuned_hist(rep) += (vws_out.tunes[0] > 0);
-					}
-				} else {
-					for (unsigned int i = 0; i < m; i++) {
-						proposals[i].update(Zgamma(i), tau(i), kappa(i), lambda(i));
+					} else {
 						const auto& vws_out = vws::rejection(proposals[i], 1, args);
-						sigma2 = vws_out.draws[0];
+						sigma2(i) = vws_out.draws[0];
 						sigma2_rejects_hist(rep) += vws_out.rejects[0];
+						sigma2_rejects_areas(i) += vws_out.rejects[0];
+					}
+				}
+			} else if (strcmp(inner_method.get_cstring(), "mh-vws") == 0) {
+				/*
+				* Metropolis-Hastings with VWS as the proposal. Use VWS with
+				* tuning as a rejection sampler for `tune` iterations, then
+				* stop updating it and use it as an MH proposal.
+				*/
+				for (unsigned int i = 0; i < m; i++) {
+					if (rep < tune) {
+						proposals[i].update(Zgamma(i), std::sqrt(tau2), kappa(i), lambda(i));
+						const auto& vws_out = vws::rejection_tune(proposals[i], 1, args);
+						sigma2(i) = vws_out.draws[0];
+						sigma2_rejects_hist(rep) += vws_out.rejects[0];
+						sigma2_rejects_areas(i) += vws_out.rejects[0];
+						sigma2_tunes_hist(rep) += vws_out.tunes[0];
+						sigma2_tuned_hist(rep) += (vws_out.tunes[0] > 0);
+					} else {
+						double u = R::runif(0, 1);
+						const auto& vws_out = proposals[i].r(1);
+						double sigma2_prop = vws_out[0];
+						double log_num = R::dlnorm(sigma2_prop, Zgamma(i), std::sqrt(tau2), true) +
+							d_invgamma(sigma2_prop, kappa(i), lambda(i), true);
+						double log_den = R::dlnorm(sigma2(i), Zgamma(i), std::sqrt(tau2), true) +
+							d_invgamma(sigma2(i), kappa(i), lambda(i), true);
+						double log_ratio = std::min(log_num - log_den, 0.0);
+						if (std::log(u) < log_ratio) {
+							sigma2(i) = sigma2_prop;
+						} else {
+							sigma2_rejects_hist(rep)++;
+							sigma2_rejects_areas(i)++;
+						}
 					}
 				}
 			} else if (strcmp(inner_method.get_cstring(), "vws-basic") == 0) {
 				// VWS without tuning using vws package
 				for (unsigned int i = 0; i < m; i++) {
-					joint_sae_proposal h(Zgamma(i), tau(i), kappa(i), lambda(i));
+					joint_sae_proposal h(Zgamma(i), std::sqrt(tau2), kappa(i), lambda(i));
 					h.refine(N - 1, tol_suff);
 					const auto& vws_out = vws::rejection(h, 1, args);
-					sigma2 = vws_out.draws[0];
+					sigma2(i) = vws_out.draws[0];
 					sigma2_rejects_hist(rep) += vws_out.rejects[0];
+					sigma2_rejects_areas(i) += vws_out.rejects[0];
 					sigma2_tunes_hist(rep) += vws_out.tunes[0];
 					sigma2_tuned_hist(rep) += (vws_out.tunes[0] > 0);
 				}
@@ -349,7 +381,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 			elapsed_sigma2 += td.count() * SEC_PER_MICROSEC;
 		}
 
-		// Save total number of knots at this point
+		// Save total number of regions at this point
 		sigma2_comps_hist(rep) = 0;
 		for (unsigned int i = 0; i < m; i++) {
 			sigma2_comps_hist(rep) += proposals[i].size();

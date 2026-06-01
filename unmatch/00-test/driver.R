@@ -15,12 +15,12 @@ mu_true = rlnorm(m, Xbeta_true, tau_true)
 y = rnorm(m, mu_true, tau_true)
 
 # ----- Fit the model using IMH -----
-init = init_mismatch(m, d = ncol(X), mu = mu_true)
+init = init_unmatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "imh")
-control = control_mismatch(R = 30000, burn = 20000, thin = 1, report = 5000,
+control = control_unmatch(R = 30000, burn = 20000, thin = 1, report = 5000,
 	save_latent = 1:m, inner = inner)
-fixed = fixed_mismatch(mu = FALSE)
-gibbs_imh = gibbs_mismatch(y, sigma, X, init, control, fixed)
+fixed = fixed_unmatch(mu = FALSE)
+gibbs_imh = gibbs_unmatch(y, sigma, X, init, control, fixed)
 print(gibbs_imh)
 
 plot(gibbs_imh$beta_hist[,1], type = "l")
@@ -35,12 +35,12 @@ plot(gibbs_imh$mu_hist[,i], type = "l")
 abline(h = mu_true[i], lty = 2, col = "red")
 
 # ----- Fit the model using AM -----
-init = init_mismatch(m, d = ncol(X), mu = mu_true)
+init = init_unmatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "am", am_varprop_init = 25, am_varprop_eps = 0.001)
-control = control_mismatch(R = 10000, burn = 8000, thin = 1, report = 5000,
+control = control_unmatch(R = 10000, burn = 8000, thin = 1, report = 5000,
 	save_latent = 1:m, inner = inner)
-fixed = fixed_mismatch(mu = FALSE)
-gibbs_am = gibbs_mismatch(y, sigma, X, init, control, fixed)
+fixed = fixed_unmatch(mu = FALSE)
+gibbs_am = gibbs_unmatch(y, sigma, X, init, control, fixed)
 print(gibbs_am)
 
 plot(gibbs_am$beta_hist[,1], type = "l")
@@ -55,12 +55,12 @@ plot(gibbs_am$mu_hist[,i], type = "l")
 abline(h = mu_true[i], lty = 2, col = "red")
 
 # ----- Fit the model using ARMS -----
-init = init_mismatch(m, d = ncol(X), mu = mu_true)
+init = init_unmatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "arms")
-control = control_mismatch(R = 3000, burn = 1000, thin = 1, report = 100,
+control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
 	save_latent = 1:m, inner = inner)
-fixed = fixed_mismatch(mu = FALSE)
-gibbs_arms = gibbs_mismatch(y, sigma, X, init, control, fixed)
+fixed = fixed_unmatch(mu = FALSE)
+gibbs_arms = gibbs_unmatch(y, sigma, X, init, control, fixed)
 print(gibbs_arms)
 
 plot(gibbs_arms$beta_hist[,1], type = "l")
@@ -74,13 +74,13 @@ i = which.min(ess_arms)
 plot(gibbs_arms$mu_hist[,i], type = "l")
 abline(h = mu_true[i], lty = 2, col = "red")
 
-# ----- Fit the model using VWS without tuning -----
-init = init_mismatch(m, d = ncol(X), mu = mu_true)
+# ----- Fit the model using basic VWS -----
+init = init_unmatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "vws-basic", tol_suff = 0.85)
-control = control_mismatch(R = 3000, burn = 1000, thin = 1, report = 100,
+control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
 	save_latent = 1:m, inner = inner)
-fixed = fixed_mismatch(mu = FALSE)
-gibbs_vwsb = gibbs_mismatch(y, sigma, X, init, control, fixed)
+fixed = fixed_unmatch(mu = FALSE)
+gibbs_vwsb = gibbs_unmatch(y, sigma, X, init, control, fixed)
 print(gibbs_vwsb)
 
 plot(gibbs_vwsb$beta_hist[,1], type = "l")
@@ -95,13 +95,13 @@ plot(gibbs_vwsb$mu_hist[,i], type = "l")
 abline(h = mu_true[i], lty = 2, col = "red")
 
 # ----- Fit the model using VWS with self-tuning -----
-init = init_mismatch(m, d = ncol(X), mu = mu_true)
+init = init_unmatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "vws-tune", tol_suff = 0.85, tol_merge = 0.01,
-	last_tune = 10000)
-control = control_mismatch(R = 3000, burn = 1000, thin = 1, report = 100,
+	tune = 10000)
+control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
 	save_latent = 1:m, inner = inner)
-fixed = fixed_mismatch(mu = FALSE)
-gibbs_vwst = gibbs_mismatch(y, sigma, X, init, control, fixed)
+fixed = fixed_unmatch(mu = FALSE)
+gibbs_vwst = gibbs_unmatch(y, sigma, X, init, control, fixed)
 print(gibbs_vwst)
 
 plot(gibbs_vwst$beta_hist[,1], type = "l")
@@ -139,3 +139,23 @@ data.frame(tuned = gibbs_vwst$mu_rejects_hist / m) %>%
 	ylab("Number of VWS Rejections Per Area") +
 	theme_minimal()
 
+# ----- Same as above, but stop tuning after an initial period -----
+init = init_unmatch(m, d = ncol(X), mu = mu_true)
+inner = control_inner(method = "vws-tune", tol_suff = 0.85, tol_merge = 0.01,
+	tune = 100)
+control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
+	save_latent = 1:m, inner = inner)
+gibbs_vwst2 = gibbs_unmatch(y, sigma, X, init, control)
+print(gibbs_vwst2)
+
+# Plot number of VWS rejections per area by iteration
+data.frame(tuned = gibbs_vwst2$mu_rejects_hist / m) %>%
+	mutate(iter = row_number()) %>%
+	filter(iter > 20) %>%
+	ggplot() +
+	geom_line(aes(iter, tuned)) +
+	geom_rect(xmin = 0, xmax = 20, ymin = min(gibbs_vwst$mu_rejects_hist / m),
+		ymax = Inf, fill = "red") +
+	xlab("Iteration") +
+	ylab("Number of VWS Rejections Per Area") +
+	theme_minimal()

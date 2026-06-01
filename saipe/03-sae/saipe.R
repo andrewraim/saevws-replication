@@ -119,9 +119,9 @@ i = which.min(ess_arms_sigma2)
 plot(arms_out$sigma2_hist[,i], type = "l")
 hist(ess_arms_sigma2)
 
-# ----- Self-tuned VWS within Gibbs (Version 1) -----
+# ----- Self-tuned VWS within Gibbs Version 1 -----
 inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
-	max_rejects = 1e6, method = "vws-tune", N = 50, last_tune = 100)
+	max_rejects = 1e6, method = "vws-tune", N = 50)
 control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
 	inner = inner_ctrl, save_latent = seq_len(m))
 vwg_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
@@ -147,6 +147,39 @@ multiESS(par_vwg_mcmc)
 
 i = which.min(ess_vwg_sigma2)
 plot(vwg_out$sigma2_hist[,i], type = "l")
+
+# ----- Self-tuned VWS within Gibbs Version 2  -----
+# Stop tuning after an initial period
+inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
+	max_rejects = 1e6, method = "vws-tune", N = 50, tune = 100)
+control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
+	inner = inner_ctrl, save_latent = seq_len(m))
+vwg2_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
+print(vwg2_out)
+
+ess_vwg2_sigma2 = ess(vwg2_out$sigma2_hist)
+
+i = which.min(ess_vwg2_sigma2)
+plot(vwg2_out$sigma2_hist[,i], type = "l")
+
+# ----- Self-tuned VWS within Gibbs Version 3  -----
+# Stop tuning after an initial period, then use proposal with MH algorithm
+# instead of rejection sampling. It may be interesting that this does not work
+# as well: it doesn't run much faster than version 2 and some of the sigma2
+# chains aren't mixing that well.
+tol_suff2 = 0.25
+tol_merge2 = 0.001
+inner_ctrl = control_inner(tol_suff = tol_suff2, tol_merge = tol_merge2,
+	max_rejects = 1e6, method = "mh-vws", N = 50, tune = 400)
+control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
+	inner = inner_ctrl, save_latent = seq_len(m))
+vwg3_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
+print(vwg3_out)
+
+ess_vwg3_sigma2 = ess(vwg3_out$sigma2_hist)
+
+i = which.min(ess_vwg3_sigma2)
+plot(vwg3_out$sigma2_hist[,i], type = "l")
 
 # ----- Fit Fay-Herriot with Gibbs sampler -----
 ctrl_fh = control_inner(method = "imh")

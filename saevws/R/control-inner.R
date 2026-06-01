@@ -12,7 +12,7 @@
 #' @param am_varprop_init TBD
 #' @param am_varprop_c TBD
 #' @param am_varprop_eps TBD
-#' @param last_tune TBD
+#' @param tune TBD
 #'
 #' @return A list with results.
 #'
@@ -22,13 +22,13 @@
 #' @export
 control_inner = function(tol_suff = 1e-2, tol_merge = exp(-100),
 	max_rejects = 1e6,
-	method = c("vws-tune", "vws-basic", "imh", "arms", "am"),
-	N = 50, last_tune = 1e6, am_varprop_init = 25, am_varprop_c = 2.4,
-	am_varprop_eps = 0.05)
+	method = c("vws-tune", "vws-basic", "imh", "arms", "am", "mh-vws"),
+	N = 50, tune = 1e6, am_varprop_init = 25,
+	am_varprop_c = 2.4, am_varprop_eps = 0.05)
 {
 	ret = list(tol_suff = tol_suff, tol_merge = tol_merge,
 		max_rejects = max_rejects, method = match.arg(method), N = N,
-		last_tune = last_tune,
+		tune = tune,
 		am_varprop_init = am_varprop_init, am_varprop_c = am_varprop_c,
 		am_varprop_eps = am_varprop_eps)
 	class(ret) = "control_inner"
