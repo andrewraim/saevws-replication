@@ -24,8 +24,8 @@ theta = y
 kappa = (df - 1) / 2.0
 lambda = (y - theta)^2 / 2.0 + df * s2 / 2.0
 
-gamma = c(1.8477, -0.9028)
-tau = 0.3062679
+gamma = c(1.8485, -0.9029)
+tau = sqrt(0.0950)
 
 Zgamma = Z %*% gamma
 
@@ -66,22 +66,35 @@ curve(lr_fn, xlim = c(0, 10))
 curve(raim::d_invgamma(x, kappa[idx], lambda[idx], log = TRUE), xlim = c(0, 10))
 curve(raim::p_invgamma(x, kappa[idx], lambda[idx], log = FALSE), xlim = c(0, 10))
 
-f_target = function(x, log = FALSE) {
+f0_target = function(x, log = FALSE) {
 	out = dlnorm(x, Zgamma[idx], tau, log = TRUE) +
 		raim::d_invgamma(x, kappa[idx], lambda[idx], log = TRUE)
 	if (log) { return(out) } else { return(exp(out)) }
 }
-n_target = integrate(f_target, lower = 0, upper = Inf)$value
+n_target = integrate(f0_target, lower = 0, upper = Inf)$value
+f_target = function(x, log = FALSE) {
+	out = f0_target(x, log = TRUE) - log(n_target)
+	if (log) { return(out) } else { return(exp(out)) }
+}
 
 p_target = function(x, log = FALSE) {
-	integrate_out = integrate(f_target, lower = 0, upper = x)
+	integrate_out = integrate(f0_target, lower = 0, upper = x)
 	out = log(integrate_out$value) - log(n_target)
 	if (log) { return(out) } else { return(exp(out)) }
 }
 
-xx = 0.5643967
+q_target = function(p) {
+	ff = function(x) { p_target(x) - p }
+	root_out = uniroot(ff, interval = c(0.0001, 10))
+	return(root_out$root)
+}
+
+# xx = 0.5643967
+# xx = q_target(0.99)
+xx = qlnorm(0.999, meanlog = Zgamma[idx], sdlog = tau)
 curve(f_target)
 p_target(xx)
+
 
 # The conditional distribution is focused on the interval (0.1103573, 0.5643967).
 # The proposal distribution is heavily focused on larger numbers:
@@ -89,3 +102,26 @@ p_target(xx)
 # effectively below 0.565 as well: P(X < 0.565) = 0.9999767
 raim::p_invgamma(xx, kappa[idx], lambda[idx], lower.tail = FALSE, log = FALSE)
 plnorm(xx, Zgamma[idx], tau)
+
+g = ggplot() +
+	geom_function(fun = dlnorm,
+		args = list(meanlog = Zgamma[idx], sdlog = tau, log = FALSE),
+		n = 500, lty = 1) +
+	geom_function(fun = f_target, n = 500, lty = 3) +
+	scale_x_continuous(limits = c(0, 1)) +
+	geom_vline(xintercept = xx, col = "red", lty = 2) +
+	xlab(expression(sigma[i]^2)) +
+	ylab("Density") +
+	theme_minimal()
+ggsave("density.pdf", g, width = 3.5, height = 2.5)
+
+g = ggplot() +
+	geom_function(fun = raim::p_invgamma, args = list(a = kappa[idx], b = lambda[idx])) +
+	scale_x_continuous(limits = c(0, 0.5)) +
+	scale_y_continuous(breaks = seq(0, 1, 0.01)) +
+	geom_vline(xintercept = xx, col = "red", lty = 2) +
+	xlab(expression(sigma[i]^2)) +
+	ylab("CDF") +
+	theme_minimal()
+ggsave("proposal.pdf", g, width = 3.5, height = 2.5)
+

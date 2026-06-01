@@ -115,6 +115,10 @@ ess_arms_theta = ess(arms_out$theta_hist)
 quantile(ess_arms_sigma2, probs)
 quantile(ess_arms_theta, probs)
 
+i = which.min(ess_arms_sigma2)
+plot(arms_out$sigma2_hist[,i], type = "l")
+hist(ess_arms_sigma2)
+
 # ----- Self-tuned VWS within Gibbs (Version 1) -----
 inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
 	max_rejects = 1e6, method = "vws-tune", N = 50, last_tune = 100)
@@ -307,6 +311,18 @@ g = data.frame(updates = vwg_out$sigma2_tunes_hist) %>%
 	scale_y_continuous(n.breaks = 10, expand = expansion()) +
 	theme_light()
 ggsave("knot-updates.pdf", g, width = 5, height = 3)
+
+g = data.frame(count = vwg_out$sigma2_knots_hist) %>%
+	mutate(iter = row_number()) %>%
+	filter(iter > 12) %>%
+	ggplot() +
+	geom_line(aes(iter, count)) +
+	xlab(NULL) +
+	ylab("Count of Knots") +
+	scale_x_continuous(n.breaks = 9) +
+	scale_y_continuous(n.breaks = 10, expand = expansion()) +
+	theme_light()
+ggsave("knot-counts.pdf", g, width = 5, height = 3)
 
 # Summaries of the regression parameters
 xtable(summary(mwg_out), digits=3)

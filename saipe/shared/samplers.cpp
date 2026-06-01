@@ -39,7 +39,7 @@ Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 {
 	auto st = std::chrono::system_clock::now();
 
-	std::vector<ConstSAEMajorizer> proposals = { ConstSAEMajorizer() };
+	std::vector<joint_sae_majorizer> proposals = { joint_sae_majorizer() };
 
 	unsigned int one = 1L;
 	arma::vec mu_vec(one);
@@ -56,7 +56,7 @@ Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
 	arma::uvec knots(n);
 
 	for (unsigned int i = 0; i < n; i++) {
-		const VWSStepOutput& vws_out = vws_step_tune(proposals, mu_vec,
+		const joint_vws_output& vws_out = joint_vws_tune(proposals, mu_vec,
 			tau, kappa_vec, lambda_vec, max_rejects, tol_suff, tol_merge);
 		draws(i) = vws_out.sigma2[0];
 		rejects(i) = vws_out.rejects[0];

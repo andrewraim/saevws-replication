@@ -48,6 +48,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	arma::uvec mu_tunes_hist(R);
 	arma::uvec mu_tuned_hist(R);
 	arma::uvec mu_rejects_areas(m);
+	arma::vec mu_mem_hist(R);
 	mu_tunes_hist.fill(0);
 	mu_tuned_hist.fill(0);
 	mu_rejects_areas.fill(0);
@@ -283,6 +284,12 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 		}
 		avg_mu_comps = mu_comps_hist(rep) / double(m);
 
+		// Save total memory usage for VWS proposals
+		mu_mem_hist(rep);
+		for (unsigned int i = 0; i < m; i++) {
+		 	mu_mem_hist(rep) += mem(proposals[i]);
+		}
+
 		if (rep >= burn && rep % thin == 0) {
 			beta_hist.row(rep_keep) = beta.t();
 			tau2_hist[rep_keep] = tau2;
@@ -316,6 +323,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 		Rcpp::Named("mu_comps_hist") = mu_comps_hist,
 		Rcpp::Named("mu_tunes_hist") = mu_tunes_hist,
 		Rcpp::Named("mu_tuned_hist") = mu_tuned_hist,
+		Rcpp::Named("mu_mem_hist") = mu_mem_hist,
 		Rcpp::Named("m") = m
 	);
 }

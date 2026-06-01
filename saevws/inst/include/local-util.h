@@ -4,6 +4,12 @@
 #include <RcppArmadillo.h>
 #include "vws.h"
 
+template <typename T, typename R>
+inline double mem(const vws::fmm_proposal<T,R>& h)
+{
+	return sizeof(R) * h.size();
+}
+
 inline void stopifnot(bool cond, const char* fmt, ...)
 {
 	if (cond) { return; }
