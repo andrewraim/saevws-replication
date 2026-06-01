@@ -37,7 +37,7 @@ for (s in seq_len(S)) {
 	res_lb = matrix(NA, R, n)
 	res_knots = matrix(NA, R, n)
 	res_elapsed = numeric(R)
-	res_rejections = numeric(R)
+	res_rejects = numeric(R)
 
 	# Transform back to original parameterization
 
@@ -48,7 +48,7 @@ for (s in seq_len(S)) {
 		res_lb[r,] = out$log_bounds
 		res_knots[r,] = out$regions
 		res_elapsed[r] = as.numeric(et - st, units = "secs")
-		res_rejections[r] = sum(out$rejections)
+		res_rejects[r] = sum(out$rejects)
 	}
 
 	lb_med = apply(res_lb, 2, quantile, probs = 0.5)
@@ -57,7 +57,7 @@ for (s in seq_len(S)) {
 	lb_list[[s]] = lb_med
 	knots_list[[s]] = knots_med
 	elapsed_list[[s]] = sum(res_elapsed)
-	rejections_list[[s]] = sum(res_rejections)
+	rejections_list[[s]] = sum(res_rejects)
 }
 
 # ----- Make 2^2 x 2^2 crosstabs -----

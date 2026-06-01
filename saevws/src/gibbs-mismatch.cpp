@@ -285,7 +285,7 @@ Rcpp::List gibbs_mismatch_cpp(const arma::vec& y, const arma::vec& sigma,
 		avg_mu_comps = mu_comps_hist(rep) / double(m);
 
 		// Save total memory usage for VWS proposals
-		mu_mem_hist(rep);
+		mu_mem_hist(rep) = 0;
 		for (unsigned int i = 0; i < m; i++) {
 		 	mu_mem_hist(rep) += mem(proposals[i]);
 		}

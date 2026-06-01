@@ -306,23 +306,23 @@ g = data.frame(updates = vwg_out$sigma2_tunes_hist) %>%
 	ggplot() +
 	geom_line(aes(iter, log10(updates + 1))) +
 	xlab(NULL) +
-	ylab("Count of Knot Updates (Log10)") +
+	ylab("Count of Updates (Log10)") +
 	scale_x_continuous(n.breaks = 9) +
 	scale_y_continuous(n.breaks = 10, expand = expansion()) +
 	theme_light()
-ggsave("knot-updates.pdf", g, width = 5, height = 3)
+ggsave("region-updates.pdf", g, width = 5, height = 3)
 
-g = data.frame(count = vwg_out$sigma2_knots_hist) %>%
+g = data.frame(count = vwg_out$sigma2_comps_hist) %>%
 	mutate(iter = row_number()) %>%
 	filter(iter > 12) %>%
 	ggplot() +
 	geom_line(aes(iter, count)) +
 	xlab(NULL) +
-	ylab("Count of Knots") +
+	ylab("Number of Total Regions") +
 	scale_x_continuous(n.breaks = 9) +
 	scale_y_continuous(n.breaks = 10, expand = expansion()) +
 	theme_light()
-ggsave("knot-counts.pdf", g, width = 5, height = 3)
+ggsave("region-counts.pdf", g, width = 5, height = 3)
 
 # Summaries of the regression parameters
 xtable(summary(mwg_out), digits=3)
