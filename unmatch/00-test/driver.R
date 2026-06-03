@@ -6,21 +6,28 @@ set.seed(1234)
 # ----- Generate data from the model with known parameters -----
 m = 500
 X = cbind(1, rnorm(m))
-sigma = rgamma(m, 1.25, 20) |> sqrt()
+sigma2 = rgamma(m, 1.25, 1/10)
+sigma = sqrt(sigma2)
 
 beta_true = c(1, -1)
 Xbeta_true = X %*% beta_true
 tau_true = 0.25
 mu_true = rlnorm(m, Xbeta_true, tau_true)
-y = rnorm(m, mu_true, tau_true)
+y = rnorm(m, mu_true, sigma)
+
+data.frame(mu = mu_true, y = y) %>%
+	ggplot() +
+	geom_point(aes(mu, y)) +
+	xlim(0, 30) +
+	ylim(0, 30) +
+	theme_minimal()
 
 # ----- Fit the model using IMH -----
 init = init_unmatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "imh")
 control = control_unmatch(R = 30000, burn = 20000, thin = 1, report = 5000,
 	save_latent = 1:m, inner = inner)
-fixed = fixed_unmatch(mu = FALSE)
-gibbs_imh = gibbs_unmatch(y, sigma, X, init, control, fixed)
+gibbs_imh = gibbs_unmatch(y, sigma, X, init, control)
 print(gibbs_imh)
 
 plot(gibbs_imh$beta_hist[,1], type = "l")
@@ -39,8 +46,7 @@ init = init_unmatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "am", am_varprop_init = 25, am_varprop_eps = 0.001)
 control = control_unmatch(R = 10000, burn = 8000, thin = 1, report = 5000,
 	save_latent = 1:m, inner = inner)
-fixed = fixed_unmatch(mu = FALSE)
-gibbs_am = gibbs_unmatch(y, sigma, X, init, control, fixed)
+gibbs_am = gibbs_unmatch(y, sigma, X, init, control)
 print(gibbs_am)
 
 plot(gibbs_am$beta_hist[,1], type = "l")
@@ -59,8 +65,7 @@ init = init_unmatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "arms")
 control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
 	save_latent = 1:m, inner = inner)
-fixed = fixed_unmatch(mu = FALSE)
-gibbs_arms = gibbs_unmatch(y, sigma, X, init, control, fixed)
+gibbs_arms = gibbs_unmatch(y, sigma, X, init, control)
 print(gibbs_arms)
 
 plot(gibbs_arms$beta_hist[,1], type = "l")
@@ -79,8 +84,7 @@ init = init_unmatch(m, d = ncol(X), mu = mu_true)
 inner = control_inner(method = "vws-basic", tol_suff = 0.85)
 control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
 	save_latent = 1:m, inner = inner)
-fixed = fixed_unmatch(mu = FALSE)
-gibbs_vwsb = gibbs_unmatch(y, sigma, X, init, control, fixed)
+gibbs_vwsb = gibbs_unmatch(y, sigma, X, init, control)
 print(gibbs_vwsb)
 
 plot(gibbs_vwsb$beta_hist[,1], type = "l")
@@ -100,8 +104,7 @@ inner = control_inner(method = "vws-tune", tol_suff = 0.85, tol_merge = 0.01,
 	tune = 10000)
 control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
 	save_latent = 1:m, inner = inner)
-fixed = fixed_unmatch(mu = FALSE)
-gibbs_vwst = gibbs_unmatch(y, sigma, X, init, control, fixed)
+gibbs_vwst = gibbs_unmatch(y, sigma, X, init, control)
 print(gibbs_vwst)
 
 plot(gibbs_vwst$beta_hist[,1], type = "l")
@@ -147,6 +150,14 @@ control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
 	save_latent = 1:m, inner = inner)
 gibbs_vwst2 = gibbs_unmatch(y, sigma, X, init, control)
 print(gibbs_vwst2)
+
+ess_vwst2 = ess(gibbs_vwst2$mu_hist)
+hist(ess_vwst2)
+
+i = which.min(ess_vwst2)
+plot(gibbs_vwst2$mu_hist[,i], type = "l")
+abline(h = mu_true[i], lty = 2, col = "red")
+
 
 # Plot number of VWS rejections per area by iteration
 data.frame(tuned = gibbs_vwst2$mu_rejects_hist / m) %>%

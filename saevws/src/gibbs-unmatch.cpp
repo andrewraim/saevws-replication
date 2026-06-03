@@ -107,14 +107,15 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 
 		if ((rep + 1) % report == 0) {
 			unsigned int s = (rep >= report - 1) ? rep - report + 1 : 0;
-			unsigned int rej = arma::sum(mu_rejects_hist(arma::span(s, rep)));
+			unsigned int rejects = arma::sum(mu_rejects_hist(arma::span(s, rep)));
 
 			if (strcmp(inner_method.get_cstring(), "vws-tune") == 0)
 			{
-	        	logger("[%d] avg-regions: %0.4f  rejects: %d\n", rep + 1,
-	        		avg_mu_comps, rej);
+				unsigned int tunes = arma::sum(mu_tunes_hist(arma::span(s, rep)));
+	        	logger("[%d] avg-N: %0.4f  tunes: %d  rejects: %d\n", rep + 1,
+	        		avg_mu_comps, tunes, rejects);
 			} else {
-	        	logger("[%d] rejects: %d\n", rep + 1, rej);
+	        	logger("[%d] rejects: %d\n", rep + 1, rejects);
 			}
 		}
 
@@ -323,6 +324,7 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 		Rcpp::Named("R") = R,
 		Rcpp::Named("burn") = burn,
 		Rcpp::Named("thin") = thin,
+		Rcpp::Named("inner_method") = inner_method,
 		Rcpp::Named("mu_rejects_hist") = mu_rejects_hist,
 		Rcpp::Named("mu_rejects_areas") = mu_rejects_areas,
 		Rcpp::Named("mu_comps_hist") = mu_comps_hist,

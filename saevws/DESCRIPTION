@@ -16,6 +16,7 @@ LinkingTo:
 	RcppArmadillo,
 	vws
 Imports:
+	coda,
 	ggplot2,
 	mcmcse,
 	Rcpp,

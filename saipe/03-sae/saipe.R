@@ -2,6 +2,7 @@ library(tidyverse)
 library(xtable)
 library(saevws)
 library(mcmcse)
+library(coda)
 
 # Set a seed
 set.seed(1234)
@@ -56,6 +57,12 @@ control = control_joint(R = 30000, burn = 28000, thin = 1, report = 1000,
 mwg_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed)
 print(mwg_out)
 
+z_geweke = geweke(mwg_out$sigma2_hist)
+plot(density(z_geweke))
+curve(dnorm, add = TRUE, lty = 2)
+sum(abs(z_geweke) > 4)
+sum(z_geweke < -3.5)
+
 # Sort areas by rejection count and plot them against some respective data
 hist(mwg_out$sigma2_rejects_areas)
 idx = order(mwg_out$sigma2_rejects_areas)
@@ -98,6 +105,12 @@ plot(am_out$sigma2_hist[,i], type = "l")
 
 hist(ess_am_sigma2)
 
+z_geweke = geweke(am_out$sigma2_hist)
+plot(density(z_geweke))
+curve(dnorm, add = TRUE, lty = 2)
+sum(abs(z_geweke) > 4)
+sum(z_geweke < -3.5)
+
 # ----- ARMS within Gibbs -----
 inner_ctrl = control_inner(method = "arms")
 control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
@@ -118,6 +131,12 @@ quantile(ess_arms_theta, probs)
 i = which.min(ess_arms_sigma2)
 plot(arms_out$sigma2_hist[,i], type = "l")
 hist(ess_arms_sigma2)
+
+z_geweke = geweke(arms_out$sigma2_hist)
+plot(density(z_geweke))
+curve(dnorm, add = TRUE, lty = 2)
+sum(abs(z_geweke) > 4)
+sum(z_geweke < -3.5)
 
 # ----- Self-tuned VWS within Gibbs Version 1 -----
 inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
@@ -147,6 +166,12 @@ multiESS(par_vwg_mcmc)
 
 i = which.min(ess_vwg_sigma2)
 plot(vwg_out$sigma2_hist[,i], type = "l")
+
+z_geweke = geweke(vwg_out$sigma2_hist)
+plot(density(z_geweke))
+curve(dnorm, add = TRUE, lty = 2)
+sum(abs(z_geweke) > 4)
+sum(z_geweke < -3.5)
 
 # ----- Self-tuned VWS within Gibbs Version 2  -----
 # Stop tuning after an initial period
@@ -343,19 +368,44 @@ g = data.frame(updates = vwg_out$sigma2_tunes_hist) %>%
 	scale_x_continuous(n.breaks = 9) +
 	scale_y_continuous(n.breaks = 10, expand = expansion()) +
 	theme_light()
+ggsave("region-updates-log10.pdf", g, width = 5, height = 3)
+
+g = data.frame(updates = vwg_out$sigma2_tunes_hist) %>%
+	mutate(iter = row_number()) %>%
+	filter(iter > 24) %>%
+	ggplot() +
+	geom_line(aes(iter, updates)) +
+	xlab(NULL) +
+	ylab("Number of Region Updates") +
+	scale_x_continuous(n.breaks = 9) +
+	scale_y_continuous(n.breaks = 10, expand = expansion()) +
+	theme_light()
 ggsave("region-updates.pdf", g, width = 5, height = 3)
 
 g = data.frame(count = vwg_out$sigma2_comps_hist) %>%
 	mutate(iter = row_number()) %>%
-	filter(iter > 12) %>%
+	filter(iter > 24) %>%
 	ggplot() +
 	geom_line(aes(iter, count)) +
 	xlab(NULL) +
-	ylab("Number of Total Regions") +
+	ylab("Number of Regions") +
 	scale_x_continuous(n.breaks = 9) +
 	scale_y_continuous(n.breaks = 10, expand = expansion()) +
 	theme_light()
 ggsave("region-counts.pdf", g, width = 5, height = 3)
+
+g = data.frame(count = vwg_out$sigma2_rejects_hist) %>%
+	mutate(iter = row_number()) %>%
+	filter(iter > 24) %>%
+	ggplot() +
+	geom_line(aes(iter, count)) +
+	xlab(NULL) +
+	ylab("Number of Rejections") +
+	scale_x_continuous(n.breaks = 9) +
+	scale_y_continuous(n.breaks = 10, expand = expansion()) +
+	theme_light()
+ggsave("rejection-counts.pdf", g, width = 5, height = 3)
+
 
 # Summaries of the regression parameters
 xtable(summary(mwg_out), digits=3)

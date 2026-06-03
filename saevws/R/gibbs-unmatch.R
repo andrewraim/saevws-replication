@@ -191,18 +191,24 @@ print.gibbs_unmatch = function(x, pr = c(0.05, 0.95), ...)
 	print(summary(x, pr))
 
 	cat("----\n")
-	printf("Total iterations R: %d   Burn: %d   Thin: %d   Saved draws: %d\n",
+	printf("Iterations: %d  Burn: %d  Thin: %d  Saved draws: %d\n",
 		x$R, x$burn, x$thin, x$R_keep)
 
-	printf("Rejections in mu step: %d  Total proposals: %d  Rejection rate: %g%%\n",
-		sum(x$mu_rejects_hist),
+	cat("----\n")
+	printf("mu step\n")
+	printf("   Proposed: %d  Rejected: %d\n",
 		sum(x$mu_rejects_hist) + x$R * x$m,
+		sum(x$mu_rejects_hist))
+
+	printf("   Rejection rate: %g%%\n",
 		100 * sum(x$mu_rejects_hist) / (sum(x$mu_rejects_hist) + x$R*x$m))
 
-	printf("Avg regions in mu step: %g\n", sum(x$mu_comps_hist) / (x$R * x$m))
+	if (x$inner_method == "vws-tune") {
+		printf("   Avg regions: %g\n", sum(x$mu_comps_hist) / (x$R * x$m))
+	}
 
 	cat("----\n")
-	printf("Elapsed time (Seconds):\n")
+	printf("Elapsed time (sec):\n")
 	x$elapsed$total = sum(unlist(x$elapsed))
 	tab = round(as.data.frame(x$elapsed), 4)
 	rownames(tab) = ""

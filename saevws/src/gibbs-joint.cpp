@@ -126,14 +126,15 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 
 		if ((rep + 1) % report == 0) {
 			unsigned int s = (rep >= report - 1) ? rep - report + 1 : 0;
-			unsigned int rej = arma::sum(sigma2_rejects_hist(arma::span(s, rep)));
+			unsigned int rejects = arma::sum(sigma2_rejects_hist(arma::span(s, rep)));
 
 			if (strcmp(inner_method.get_cstring(), "vws-tune") == 0)
 			{
-	        	logger("[%d] avg-regions: %0.4f  rejects: %d\n", rep + 1,
-	        		avg_sigma2_comps, rej);
+				unsigned int tunes = arma::sum(sigma2_tunes_hist(arma::span(s, rep)));
+	        	logger("[%d] avg-N: %0.4f  tunes: %d  rejects: %d\n", rep + 1,
+	        		avg_sigma2_comps, tunes, rejects);
 			} else {
-	        	logger("[%d] rejects: %d\n", rep + 1, rej);
+	        	logger("[%d] rejects: %d\n", rep + 1, rejects);
 			}
 		}
 
@@ -425,6 +426,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 		Rcpp::Named("R") = R,
 		Rcpp::Named("burn") = burn,
 		Rcpp::Named("thin") = thin,
+		Rcpp::Named("inner_method") = inner_method,
 		Rcpp::Named("sigma2_rejects_hist") = sigma2_rejects_hist,
 		Rcpp::Named("sigma2_rejects_areas") = sigma2_rejects_areas,
 		Rcpp::Named("sigma2_comps_hist") = sigma2_comps_hist,
