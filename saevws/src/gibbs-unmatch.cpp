@@ -83,7 +83,7 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	arms_quantiles.col(1).fill(1);
 	arms_quantiles.col(2).fill(5);
 
-	// This block is only used if inner_method == "am"
+	// This block is only used if inner_method == "amh"
 	arma::vec mu_mean(m);
 	arma::vec mu_g(m);
 	arma::vec mu_varprop(m);
@@ -143,10 +143,10 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				mu(idx) = mu_prop.elem(idx);
 				mu_rejects_hist(rep) = m - idx.n_elem;
 				mu_rejects_areas += (arma::log(u) >= log_ratio);
-			} else if (strcmp(inner_method.get_cstring(), "am") == 0) {
+			} else if (strcmp(inner_method.get_cstring(), "amh") == 0) {
 				/*
-				* Adaptive Metropolis (AM) sampling from Haario, Saksman, &
-				* Tamminen (2005)
+				* Adaptive Metropolis-Hastings (AMH) sampling from Haario,
+				* Saksman, & Tamminen (2005)
 				*/
 
 				for (unsigned int i = 0; i < m; i++) {

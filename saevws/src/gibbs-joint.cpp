@@ -99,7 +99,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	arms_quantiles.col(1).fill(1);
 	arms_quantiles.col(2).fill(5);
 
-	// This block is only used if inner_method == "am"
+	// This block is only used if inner_method == "amh"
 	arma::vec sigma2_mean(m);
 	arma::vec sigma2_g(m);
 	arma::vec sigma2_varprop(m);
@@ -219,10 +219,10 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 						sigma2_rejects_areas(i)++;
 					}
 				}
-			} else if (strcmp(inner_method.get_cstring(), "am") == 0) {
+			} else if (strcmp(inner_method.get_cstring(), "amh") == 0) {
 				/*
-				* Adaptive Metropolis (AM) sampling from Haario, Saksman, &
-				* Tamminen (2005).
+				* Adaptive Metropolis-Hastings (AMH) sampling from Haario,
+				* Saksman, & Tamminen (2005).
 				*
 				* Adjust the numerator and denominator with the Jacobian of the
 				* transformation, since we exponentiate the candidate (which is
@@ -363,16 +363,27 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				}
 			} else if (strcmp(inner_method.get_cstring(), "vws-basic") == 0) {
 				// VWS without tuning using vws package
+				Rprintf("gibbs_joint 1: Enter vws-basic\n");
 				for (unsigned int i = 0; i < m; i++) {
+					Rprintf("gibbs_joint 1.1\n");
 					joint_sae_proposal h(Zgamma(i), std::sqrt(tau2), kappa(i), lambda(i));
+					Rprintf("gibbs_joint 1.2\n");
 					h.refine(N - 1, tol_suff);
+					Rprintf("gibbs_joint 1.3\n");
 					const auto& vws_out = vws::rejection(h, 1, args);
+					Rprintf("gibbs_joint 1.4\n");
 					sigma2(i) = vws_out.draws[0];
+					Rprintf("gibbs_joint 1.5\n");
 					sigma2_rejects_hist(rep) += vws_out.rejects[0];
+					Rprintf("gibbs_joint 1.6\n");
 					sigma2_rejects_areas(i) += vws_out.rejects[0];
+					Rprintf("gibbs_joint 1.7\n");
 					sigma2_tunes_hist(rep) += vws_out.tunes[0];
+					Rprintf("gibbs_joint 1.8\n");
 					sigma2_tuned_hist(rep) += (vws_out.tunes[0] > 0);
+					Rprintf("gibbs_joint 1.9\n");
 				}
+				Rprintf("gibbs_joint 2: Exit vws-basic\n");
 			} else {
 				Rcpp::stop("Unrecognized method in inner_ctrl");
 			}

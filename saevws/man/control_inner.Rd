@@ -8,7 +8,7 @@ control_inner(
   tol_suff = 0.01,
   tol_merge = exp(-100),
   max_rejects = 1e+06,
-  method = c("vws-tune", "vws-basic", "imh", "arms", "am", "mh-vws"),
+  method = c("vws-tune", "vws-basic", "imh", "arms", "amh", "mh-vws"),
   N = 50,
   tune = 1e+06,
   am_varprop_init = 25,

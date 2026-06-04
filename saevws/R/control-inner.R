@@ -22,7 +22,7 @@
 #' @export
 control_inner = function(tol_suff = 1e-2, tol_merge = exp(-100),
 	max_rejects = 1e6,
-	method = c("vws-tune", "vws-basic", "imh", "arms", "am", "mh-vws"),
+	method = c("vws-tune", "vws-basic", "imh", "arms", "amh", "mh-vws"),
 	N = 50, tune = 1e6, am_varprop_init = 25,
 	am_varprop_c = 2.4, am_varprop_eps = 0.05)
 {
