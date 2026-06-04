@@ -122,22 +122,6 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 
 	for (unsigned int rep = 0; rep < R; rep++)
 	{
-		Rcpp::checkUserInterrupt();
-
-		if ((rep + 1) % report == 0) {
-			unsigned int s = (rep >= report - 1) ? rep - report + 1 : 0;
-			unsigned int rejects = arma::sum(sigma2_rejects_hist(arma::span(s, rep)));
-
-			if (strcmp(inner_method.get_cstring(), "vws-tune") == 0)
-			{
-				unsigned int tunes = arma::sum(sigma2_tunes_hist(arma::span(s, rep)));
-	        	logger("[%d] avg-N: %0.4f  tunes: %d  rejects: %d\n", rep + 1,
-	        		avg_sigma2_comps, tunes, rejects);
-			} else {
-	        	logger("[%d] rejects: %d\n", rep + 1, rejects);
-			}
-		}
-
 		// Draw [theta | rest]
 		if (!fixed["theta"]) {
 			auto st = std::chrono::system_clock::now();
@@ -363,27 +347,14 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				}
 			} else if (strcmp(inner_method.get_cstring(), "vws-basic") == 0) {
 				// VWS without tuning using vws package
-				Rprintf("gibbs_joint 1: Enter vws-basic\n");
 				for (unsigned int i = 0; i < m; i++) {
-					Rprintf("gibbs_joint 1.1\n");
 					joint_sae_proposal h(Zgamma(i), std::sqrt(tau2), kappa(i), lambda(i));
-					Rprintf("gibbs_joint 1.2\n");
 					h.refine(N - 1, tol_suff);
-					Rprintf("gibbs_joint 1.3\n");
 					const auto& vws_out = vws::rejection(h, 1, args);
-					Rprintf("gibbs_joint 1.4\n");
 					sigma2(i) = vws_out.draws[0];
-					Rprintf("gibbs_joint 1.5\n");
 					sigma2_rejects_hist(rep) += vws_out.rejects[0];
-					Rprintf("gibbs_joint 1.6\n");
 					sigma2_rejects_areas(i) += vws_out.rejects[0];
-					Rprintf("gibbs_joint 1.7\n");
-					sigma2_tunes_hist(rep) += vws_out.tunes[0];
-					Rprintf("gibbs_joint 1.8\n");
-					sigma2_tuned_hist(rep) += (vws_out.tunes[0] > 0);
-					Rprintf("gibbs_joint 1.9\n");
 				}
-				Rprintf("gibbs_joint 2: Exit vws-basic\n");
 			} else {
 				Rcpp::stop("Unrecognized method in inner_ctrl");
 			}
@@ -414,6 +385,22 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 
 			rep_keep++;
 		}
+
+		if ((rep + 1) % report == 0) {
+			unsigned int s = (rep >= report) ? rep - report : 0;
+			unsigned int rejects = arma::sum(sigma2_rejects_hist(arma::span(s, rep)));
+
+			if (strcmp(inner_method.get_cstring(), "vws-tune") == 0)
+			{
+				unsigned int tunes = arma::sum(sigma2_tunes_hist(arma::span(s, rep)));
+				logger("[%d] avg-N: %0.4f  tunes: %d  rejects: %d\n", rep + 1,
+					avg_sigma2_comps, tunes, rejects);
+			} else {
+				logger("[%d] rejects: %d\n", rep + 1, rejects);
+			}
+		}
+
+		Rcpp::checkUserInterrupt();
 	}
 
 	Rcpp::List elapsed = Rcpp::List::create(

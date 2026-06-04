@@ -3,6 +3,7 @@ library(xtable)
 library(saevws)
 library(mcmcse)
 library(coda)
+library(knitr)
 
 # Set a seed
 set.seed(1234)
@@ -23,7 +24,20 @@ tol_levels = expand.grid(
 	mutate(tol_suff = tol_suff_levels[idx_suff]) %>%
 	mutate(tol_merge = tol_merge_levels[idx_merge])
 
-run_vws0 = FALSE
+run_vws0 = TRUE
+
+# For plotting a function that is generally increasing, find the first index
+# where we cross tol percent of the max. If the function is generally
+# increasing, find the first index where the min is larger than tol percent of
+# the series.
+first_cross = function(x, tol, max = TRUE) {
+	if (max) {
+		idx = which(x >= tol*max(x))
+	} else {
+		idx = which(min(x) >= tol*x)
+	}
+	return(idx[1])
+}
 
 # ----- Data setup -----
 ff = file.path("..", "data", "saipe.csv")
@@ -76,32 +90,32 @@ plot(sort(imh_out$sigma2_rejects_areas), df[idx])
 plot(sort(imh_out$sigma2_rejects_areas), s2[idx])
 
 ## Convert any NaN values of ESS (i.e., no chain movement) to zero
-ess_imh_sigma2 = ess(imh_out$sigma2_hist)
-ess_imh_sigma2[is.na(ess_imh_sigma2)] = 0
-ess_imh_theta = ess(imh_out$theta_hist)
-quantile(ess_imh_sigma2, probs)
-quantile(ess_imh_theta, probs)
+ess_sigma2 = ess(imh_out$sigma2_hist)
+ess_sigma2[is.na(ess_sigma2)] = 0
+ess_theta = ess(imh_out$theta_hist)
+quantile(ess_sigma2, probs)
+quantile(ess_theta, probs)
 
-par_imh_mcmc = cbind(imh_out$beta_hist, imh_out$gamma_hist,
+par_mcmc = cbind(imh_out$beta_hist, imh_out$gamma_hist,
 	imh_out$phi2_hist, imh_out$tau2_hist)
 multiESS(imh_out$beta_hist)
 multiESS(imh_out$gamma_hist)
 ess(imh_out$phi2_hist)
 ess(imh_out$tau2_hist)
-multiESS(par_imh_mcmc)
+multiESS(par_mcmc)
 
 tbl_ess = tibble(
 	method = "IMH",
 	tol_suff = NA,
 	tol_merge = NA,
-	ess1 = quantile(ess_imh_sigma2, probs[1]),
-	ess2 = quantile(ess_imh_sigma2, probs[2]),
-	ess3 = quantile(ess_imh_sigma2, probs[3]),
+	ess1 = quantile(ess_sigma2, probs[1]),
+	ess2 = quantile(ess_sigma2, probs[2]),
+	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(imh_out$elapsed)),
 	rejections = sum(imh_out$sigma2_rejects_hist)
 )
 
-# ----- Adaptive Metropolis within Gibbs -----
+# ----- Adaptive Metropolis-Hastings within Gibbs -----
 inner_ctrl = control_inner(method = "amh", am_varprop_init = 1)
 control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1000,
 	inner = inner_ctrl, save_latent = seq_len(m))
@@ -113,13 +127,13 @@ plot(amh_out$gamma_hist[,1], type = "l")
 plot(amh_out$phi2_hist, type = "l")
 plot(amh_out$tau2_hist, type = "l")
 
-ess_amh_sigma2 = ess(amh_out$sigma2_hist)
-ess_amh_theta = ess(amh_out$theta_hist)
+ess_sigma2 = ess(amh_out$sigma2_hist)
+ess_theta = ess(amh_out$theta_hist)
 
-i = which.min(ess_amh_sigma2)
+i = which.min(ess_sigma2)
 plot(amh_out$sigma2_hist[,i], type = "l")
 
-hist(ess_amh_sigma2)
+hist(ess_sigma2)
 
 z_geweke = geweke(amh_out$sigma2_hist)
 plot(density(z_geweke))
@@ -131,9 +145,9 @@ tbl_ess = tbl_ess %>% add_row(
 	method = "AMH",
 	tol_suff = NA,
 	tol_merge = NA,
-	ess1 = quantile(ess_amh_sigma2, probs[1]),
-	ess2 = quantile(ess_amh_sigma2, probs[2]),
-	ess3 = quantile(ess_amh_sigma2, probs[3]),
+	ess1 = quantile(ess_sigma2, probs[1]),
+	ess2 = quantile(ess_sigma2, probs[2]),
+	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(amh_out$elapsed)),
 	rejections = sum(amh_out$sigma2_rejects_hist)
 )
@@ -150,14 +164,14 @@ plot(arms_out$gamma_hist[,1], type = "l")
 plot(arms_out$phi2_hist, type = "l")
 plot(arms_out$tau2_hist, type = "l")
 
-ess_arms_sigma2 = ess(arms_out$sigma2_hist)
-ess_arms_theta = ess(arms_out$theta_hist)
-quantile(ess_arms_sigma2, probs)
-quantile(ess_arms_theta, probs)
+ess_sigma2 = ess(arms_out$sigma2_hist)
+ess_theta = ess(arms_out$theta_hist)
+quantile(ess_sigma2, probs)
+quantile(ess_theta, probs)
 
-i = which.min(ess_arms_sigma2)
+i = which.min(ess_sigma2)
 plot(arms_out$sigma2_hist[,i], type = "l")
-hist(ess_arms_sigma2)
+hist(ess_sigma2)
 
 z_geweke = geweke(arms_out$sigma2_hist)
 plot(density(z_geweke))
@@ -169,9 +183,9 @@ tbl_ess = tbl_ess %>% add_row(
 	method = "ARMS",
 	tol_suff = NA,
 	tol_merge = NA,
-	ess1 = quantile(ess_arms_sigma2, probs[1]),
-	ess2 = quantile(ess_arms_sigma2, probs[2]),
-	ess3 = quantile(ess_arms_sigma2, probs[3]),
+	ess1 = quantile(ess_sigma2, probs[1]),
+	ess2 = quantile(ess_sigma2, probs[2]),
+	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(arms_out$elapsed)),
 	rejections = sum(arms_out$sigma2_rejects_hist)
 )
@@ -209,7 +223,7 @@ for (l in seq_along(nrow(tol_levels)))
 	# ess(gibbs_out$tau2_hist)
 	# multiESS(par_vws_mcmc)
 
-	i = which.min(ess_vws_sigma2)
+	i = which.min(ess_sigma2)
 	plot(gibbs_out$sigma2_hist[,i], type = "l")
 
 	z_geweke = geweke(gibbs_out$sigma2_hist)
@@ -217,6 +231,49 @@ for (l in seq_along(nrow(tol_levels)))
 	curve(dnorm, add = TRUE, lty = 2)
 	sum(abs(z_geweke) > 4)
 	sum(z_geweke < -3.5)
+
+	iter_first = first_cross(gibbs_out$sigma2_rejects_hist, 0.70, max = FALSE)
+
+	# iter_first = first_cross(gibbs_out$sigma2_tunes_hist, tol = 0.005, max = FALSE)
+	g = data.frame(updates = gibbs_out$sigma2_tunes_hist) %>%
+		mutate(iter = row_number()) %>%
+		filter(iter > iter_first) %>%
+		ggplot() +
+		geom_line(aes(iter, updates)) +
+		xlab(NULL) +
+		ylab("Number of Region Updates") +
+		scale_x_continuous(n.breaks = 9) +
+		scale_y_continuous(n.breaks = 10, expand = expansion()) +
+		theme_light()
+	ff = sprintf("region-updates-vws1-%d.pdf", l)
+	ggsave(ff, g, width = 5, height = 3)
+
+	# iter_first = first_cross(gibbs_out$sigma2_comps_hist, 0.95, max = TRUE)
+	g = data.frame(count = gibbs_out$sigma2_comps_hist) %>%
+		mutate(iter = row_number()) %>%
+		filter(iter >= iter_first) %>%
+		ggplot() +
+		geom_line(aes(iter, count)) +
+		xlab(NULL) +
+		ylab("Number of Regions") +
+		scale_x_continuous(n.breaks = 9) +
+		scale_y_continuous(n.breaks = 10, expand = expansion()) +
+		theme_light()
+	ff = sprintf("region-counts-vws1-%d.pdf", l)
+	ggsave(ff, g, width = 5, height = 3)
+
+	g = data.frame(count = gibbs_out$sigma2_rejects_hist) %>%
+		mutate(iter = row_number()) %>%
+		filter(iter > iter_first) %>%
+		ggplot() +
+		geom_line(aes(iter, count)) +
+		xlab(NULL) +
+		ylab("Number of Rejections") +
+		scale_x_continuous(n.breaks = 9) +
+		scale_y_continuous(n.breaks = 10, expand = expansion()) +
+		theme_light()
+	ff = sprintf("rejection-counts-vws1-%d.pdf", l)
+	ggsave(ff, g, width = 5, height = 3)
 
 	tbl_ess = tbl_ess %>% add_row(
 		method = "VWS1",
@@ -274,24 +331,27 @@ for (l in seq_along(nrow(tol_levels)))
 # as well: it doesn't run much faster than version 2 and some of the sigma2
 # chains aren't mixing that well.
 
-tol_suff = 0.25
-tol_merge = 0.001
+if (FALSE) {
+	tol_suff = 0.25
+	tol_merge = 0.001
 
-inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
-	max_rejects = 1e6, method = "mh-vws", N = 50, tune = 400)
-control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
-	inner = inner_ctrl, save_latent = seq_len(m))
-gibbs_out = gibbs_joint(y, s2, X, Z, df, init, control)
-print(gibbs_out)
+	inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
+		max_rejects = 1e6, method = "mh-vws", N = 50, tune = 400)
+	control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
+		inner = inner_ctrl, save_latent = seq_len(m))
+	gibbs_out = gibbs_joint(y, s2, X, Z, df, init, control)
+	print(gibbs_out)
 
-ess_sigma2 = ess(gibbs_out$sigma2_hist)
+	ess_sigma2 = ess(gibbs_out$sigma2_hist)
 
-i = which.min(ess_sigma2)
-plot(gibbs_out$sigma2_hist[,i], type = "l")
+	i = which.min(ess_sigma2)
+	plot(gibbs_out$sigma2_hist[,i], type = "l")
+}
 
 # ----- Fit Fay-Herriot with Gibbs sampler -----
-ctrl_fh = control_inner(method = "imh")
-control_fh = control_joint(R = 3000, burn = 1000, thin = 1,
+# This is just for reference, not for comparison to other sampling methods.
+inner_ctrl = control_inner(method = "imh")
+control = control_joint(R = 3000, burn = 1000, thin = 1,
 	report = 1000, inner = inner_ctrl, save_latent = seq_len(m))
 fixed_fh = fixed_joint(gamma = TRUE, tau2 = TRUE, sigma2 = TRUE)
 
@@ -326,15 +386,13 @@ if (run_vws0)
 		elapsed = sum(unlist(vws0_out$elapsed)),
 		rejections = sum(vws0_out$sigma2_rejects_hist)
 	)
-
-	vws2_out[[l]] = vws0_out
 }
 
 
 # ----- Create some plots from the results -----
 
 # Dot plot of joint sampling variances versus estimated
-g = data.frame(s2 = s2, joint = apply(vws_out$sigma2_hist,2,mean)) %>%
+g = data.frame(s2 = s2, joint = apply(vws1_out[[1]]$sigma2_hist, 2, mean)) %>%
 	ggplot() +
 	geom_point(aes(s2, joint)) +
 	geom_abline(slope = 1, lty = 2, col = "red") +
@@ -345,8 +403,8 @@ ggsave("variance-model-vs-estimated.pdf", g, width = 4, height = 4, unit="in")
 
 # Model uncertainty in sigma2 versus area sample size
 g = data.frame(df = dat_saipe$df, log_n = log(dat_saipe$hu_sampled), s2 = s2,
-		lo = apply(vws_out$sigma2_hist, 2, quantile, probs = alpha/2),
-		hi = apply(vws_out$sigma2_hist, 2, quantile, probs = 1-alpha/2)) %>%
+		lo = apply(vws1_out[[1]]$sigma2_hist, 2, quantile, probs = alpha/2),
+		hi = apply(vws1_out[[1]]$sigma2_hist, 2, quantile, probs = 1-alpha/2)) %>%
 	mutate(width = hi - lo) %>%
 	ggplot() +
 	geom_point(aes(x = log_n, y = width)) +
@@ -359,8 +417,8 @@ ggsave("variance-ci-width.pdf", g, width = 4, height = 4)
 # area sample size.
 g = data.frame(
 		log_n = log(dat_saipe$hu_sampled),
-		vws_lo = apply(vws_out$theta_hist, 2, quantile, probs = alpha/2),
-		vws_hi = apply(vws_out$theta_hist, 2, quantile, probs = 1-alpha/2),
+		vws_lo = apply(vws1_out[[1]]$theta_hist, 2, quantile, probs = alpha/2),
+		vws_hi = apply(vws1_out[[1]]$theta_hist, 2, quantile, probs = 1-alpha/2),
 		fh_lo = apply(fh_out$theta_hist, 2, quantile, probs = alpha/2),
 		fh_hi = apply(fh_out$theta_hist, 2, quantile, probs = 1-alpha/2)) %>%
 	mutate(vws_width = vws_hi - vws_lo) %>%
@@ -378,14 +436,40 @@ g = data.frame(
 ggsave("theta-ci-ratio.pdf", g, width = 5, height = 5)
 
 # Overlay histograms of the ESS for sigma2
-g = data.frame(imh = ess_imh_sigma2, vws = ess_vws_sigma2) %>%
+# g = data.frame(
+#		imh = ess(imh_out$sigma2_hist),
+#		vws = ess(vws1_out[[1]]$sigma2_hist)) %>%
+#	ggplot() +
+#	geom_histogram(aes(x = imh), col = "black", fill = "white", bins = 30, alpha = 0.4) +
+#	geom_histogram(aes(x = vws),  col = "black", fill = "red2", bins = 30, alpha = 0.4) +
+#	xlab("ESS") +
+#	ylab("Count") +
+#	theme_light()
+# ggsave("sigma2-ess-hist.pdf", g, width = 5, height = 3)
+
+df_plot = data.frame(
+		imh = ess(imh_out$sigma2_hist),
+		arms = ess(arms_out$sigma2_hist),
+		amh = ess(amh_out$sigma2_hist),
+		vws = ess(vws1_out[[1]]$sigma2_hist)) %>%
+	mutate(iter = row_number())
+df_quantiles = data.frame(probs = c(0.20, 0.40, 0.60, 0.80)) %>%
+	mutate(imh = quantile(df_plot$imh, probs, na.rm = TRUE)) %>%
+	mutate(arms = quantile(df_plot$arms, probs, na.rm = TRUE)) %>%
+	mutate(amh = quantile(df_plot$amh, probs, na.rm = TRUE)) %>%
+	mutate(vws = quantile(df_plot$vws, probs, na.rm = TRUE))
+g = pivot_longer(df_plot, cols = c("imh", "arms", "amh", "vws")) %>%
 	ggplot() +
-	geom_histogram(aes(x = imh), col = "black", fill = "white", bins = 30, alpha = 0.4) +
-	geom_histogram(aes(x = vws),  col = "black", fill = "red2", bins = 30, alpha = 0.4) +
+	stat_ecdf(aes(x = value, group = name)) +
+	geom_point(data = df_quantiles, aes(imh, probs), pch = 16, cex = 3) +
+	geom_point(data = df_quantiles, aes(amh, probs), pch = 17, cex = 3) +
+	# geom_point(data = df_quantiles, aes(arms, probs), pch = 18, cex = 3) +
+	# geom_point(data = df_quantiles, aes(vws, probs), pch = 19, cex = 3) +
+	scale_x_continuous(expand = expansion(0,0)) +
 	xlab("ESS") +
-	ylab("Count") +
+	ylab("Empirical CDF") +
 	theme_light()
-ggsave("sigma2-ess-hist.pdf", g, width = 5, height = 3)
+ggsave("sigma2-ess-ecdf.pdf", g, width = 4, height = 3)
 
 # Overlay trace plot for the VWS and IMH sigma2
 # Pick the 3 counties with worst IMH chains for sigma2
@@ -475,56 +559,30 @@ g = data.frame(imh = sigma2_width_imh, vws = sigma2_width_vws) %>%
 	theme_light()
 ggsave("sigma2-width-imh-vs-vws.pdf", g, width = 3.5, height = 3.5, unit="in")
 
-g = data.frame(updates = vws_out$sigma2_tunes_hist) %>%
-	mutate(iter = row_number()) %>%
-	ggplot() +
-	geom_line(aes(iter, log10(updates + 1))) +
-	xlab(NULL) +
-	ylab("Count of Updates (Log10)") +
-	scale_x_continuous(n.breaks = 9) +
-	scale_y_continuous(n.breaks = 10, expand = expansion()) +
-	theme_light()
-ggsave("region-updates-log10.pdf", g, width = 5, height = 3)
+# g = data.frame(updates = vws_out$sigma2_tunes_hist) %>%
+#	mutate(iter = row_number()) %>%
+#	ggplot() +
+#	geom_line(aes(iter, log10(updates + 1))) +
+#	xlab(NULL) +
+#	ylab("Count of Updates (Log10)") +
+#	scale_x_continuous(n.breaks = 9) +
+#	scale_y_continuous(n.breaks = 10, expand = expansion()) +
+#	theme_light()
+# ggsave("region-updates-log10.pdf", g, width = 5, height = 3)
 
-g = data.frame(updates = vws_out$sigma2_tunes_hist) %>%
-	mutate(iter = row_number()) %>%
-	filter(iter > 24) %>%
-	ggplot() +
-	geom_line(aes(iter, updates)) +
-	xlab(NULL) +
-	ylab("Number of Region Updates") +
-	scale_x_continuous(n.breaks = 9) +
-	scale_y_continuous(n.breaks = 10, expand = expansion()) +
-	theme_light()
-ggsave("region-updates.pdf", g, width = 5, height = 3)
 
-g = data.frame(count = vws_out$sigma2_comps_hist) %>%
-	mutate(iter = row_number()) %>%
-	filter(iter > 24) %>%
-	ggplot() +
-	geom_line(aes(iter, count)) +
-	xlab(NULL) +
-	ylab("Number of Regions") +
-	scale_x_continuous(n.breaks = 9) +
-	scale_y_continuous(n.breaks = 10, expand = expansion()) +
-	theme_light()
-ggsave("region-counts.pdf", g, width = 5, height = 3)
 
-g = data.frame(count = vws_out$sigma2_rejects_hist) %>%
-	mutate(iter = row_number()) %>%
-	filter(iter > 24) %>%
-	ggplot() +
-	geom_line(aes(iter, count)) +
-	xlab(NULL) +
-	ylab("Number of Rejections") +
-	scale_x_continuous(n.breaks = 9) +
-	scale_y_continuous(n.breaks = 10, expand = expansion()) +
-	theme_light()
-ggsave("rejection-counts.pdf", g, width = 5, height = 3)
-
+tbl_ess %>%
+	mutate(tol_merge = format(tol_merge, scientific = TRUE)) %>%
+	mutate(ess1 = format(ess1, digits = 2, big.mark = ",")) %>%
+	mutate(ess2 = format(ess2, digits = 2, big.mark = ",")) %>%
+	mutate(ess3 = format(ess3, digits = 2, big.mark = ",")) %>%
+	mutate(rejections = format(rejections, digits = 2, big.mark = ",", scientific = FALSE)) %>%
+	mutate(elapsed = sprintf("%0.2f", elapsed)) %>%
+	kable(format = "latex", linesep = "")
 
 # Summaries of the regression parameters
 xtable(summary(imh_out), digits=3)
-xtable(summary(vws_out), digits=3)
+xtable(summary(vws1_out[[1]]), digits=3)
 
 save.image("results.Rdata")

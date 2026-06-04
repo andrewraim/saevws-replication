@@ -103,23 +103,6 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 
 	for (unsigned int rep = 0; rep < R; rep++)
 	{
-		Rcpp::checkUserInterrupt();
-
-		if ((rep + 1) % report == 0) {
-			unsigned int s = (rep >= report - 1) ? rep - report + 1 : 0;
-			unsigned int rejects = arma::sum(mu_rejects_hist(arma::span(s, rep)));
-
-			if (strcmp(inner_method.get_cstring(), "vws-tune") == 0)
-			{
-				unsigned int tunes = arma::sum(mu_tunes_hist(arma::span(s, rep)));
-	        	logger("[%d] avg-N: %0.4f  tunes: %d  rejects: %d\n", rep + 1,
-	        		avg_mu_comps, tunes, rejects);
-			} else {
-	        	logger("[%d] rejects: %d\n", rep + 1, rejects);
-			}
-		}
-
-
 		// Draw [mu | rest]
 		if (!fixed["mu"]) {
 			auto st = std::chrono::system_clock::now();
@@ -307,6 +290,23 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 
 			rep_keep++;
 		}
+
+		if ((rep + 1) % report == 0) {
+			unsigned int s = (rep >= report) ? rep - report : 0;
+			unsigned int rejects = arma::sum(mu_rejects_hist(arma::span(s, rep)));
+
+			if (strcmp(inner_method.get_cstring(), "vws-tune") == 0)
+			{
+				unsigned int tunes = arma::sum(mu_tunes_hist(arma::span(s, rep)));
+				logger("[%d] avg-N: %0.4f  tunes: %d  rejects: %d\n", rep + 1,
+					avg_mu_comps, tunes, rejects);
+			} else {
+				logger("[%d] rejects: %d\n", rep + 1, rejects);
+			}
+		}
+
+		Rcpp::checkUserInterrupt();
+
 	}
 
 	Rcpp::List elapsed = Rcpp::List::create(
