@@ -625,8 +625,8 @@ imh4_out = gibbs_joint(y, s2, X, Z, df, init, control)
 
 # TBD: can we get the statistic for all m sigma2 entries, or is that too much?
 ess_sigma2 = ess(imh_out$sigma2_hist)
-# lowest_imh = order(ess_sigma2)[1:3]
-lowest_imh = 1:m
+lowest_imh = order(ess_sigma2)[1:3]
+# lowest_imh = 1:m
 
 # Try Gelman-Rubin with coda package on IMH.
 mcmc_list = mcmc.list(
@@ -635,7 +635,7 @@ mcmc_list = mcmc.list(
 	as.mcmc(imh3_out$sigma2_hist[,lowest_imh]),
 	as.mcmc(imh4_out$sigma2_hist[,lowest_imh])
 )
-gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
+gr_imh = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
 
 # Try Gelman-Rubin with coda package on VWS. Base it on the four runs of VWS1.
 # It shouldn't matter that they are based on different tunings of the rejection
@@ -647,5 +647,5 @@ mcmc_list = mcmc.list(
 	as.mcmc(vws1_out[[3]]$sigma2_hist[,lowest_imh]),
 	as.mcmc(vws1_out[[4]]$sigma2_hist[,lowest_imh])
 )
-gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
+gr_vws = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
 
