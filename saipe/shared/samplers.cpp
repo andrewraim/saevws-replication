@@ -35,51 +35,6 @@ Rcpp::List r_metro(unsigned int n, double init, double mu, double tau,
 
 // [[Rcpp::export]]
 Rcpp::List r_target(unsigned int n, double mu, double tau, double kappa,
-	double lambda, double tol_suff, double tol_merge, unsigned int max_rejects)
-{
-	auto st = std::chrono::system_clock::now();
-
-	std::vector<joint_sae_majorizer> proposals = { joint_sae_majorizer() };
-
-	unsigned int one = 1L;
-	arma::vec mu_vec(one);
-	arma::vec lambda_vec(one);
-	arma::vec kappa_vec(one);
-
-	mu_vec.fill(mu);
-	kappa_vec.fill(kappa);
-	lambda_vec.fill(lambda);
-
-	arma::vec draws(n);
-	arma::vec log_bounds(n);
-	arma::uvec rejects(n);
-	arma::uvec knots(n);
-
-	for (unsigned int i = 0; i < n; i++) {
-		const joint_vws_output& vws_out = joint_vws_tune(proposals, mu_vec,
-			tau, kappa_vec, lambda_vec, max_rejects, tol_suff, tol_merge);
-		draws(i) = vws_out.sigma2[0];
-		rejects(i) = vws_out.rejects[0];
-		log_bounds(i) = vws_out.log_bound[0];
-		knots(i) = proposals[0].get_knots().length();
-	}
-
-	auto et = std::chrono::system_clock::now();
-	auto td = std::chrono::duration_cast<std::chrono::microseconds>(et - st);
-	auto elapsed = td.count() * SEC_PER_MICROSEC;
-
-	return Rcpp::List::create(
-		Rcpp::Named("draws") = draws,
-		Rcpp::Named("log_bounds") = log_bounds,
-		Rcpp::Named("rejects") = rejects,
-		Rcpp::Named("regions") = knots + 1,
-		Rcpp::Named("elapsed") = elapsed
-	);
-}
-
-
-// [[Rcpp::export]]
-Rcpp::List r_target_new(unsigned int n, double mu, double tau, double kappa,
 	double lambda, double tol_suff, double tol_merge, unsigned int max_rejects,
 	unsigned int report = 1e8)
 {

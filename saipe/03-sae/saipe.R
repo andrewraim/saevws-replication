@@ -65,7 +65,15 @@ control = control_joint(R = 30000, burn = 28000, thin = 1, report = 1000,
 imh_out = gibbs_joint(y, s2, X, Z, df, init, control)
 print(imh_out)
 
+# TBD: Geweke diagnostic seems about to detect the worst mixing chains. But how
+# to summarize it in a table for results?
+
 z_geweke = geweke(imh_out$sigma2_hist)
+pval = pnorm(2 * abs(z_geweke), lower.tail = FALSE)
+idx = order(pval)[1:6]
+pval[idx]
+plot(imh_out$sigma2_hist[,idx[6]], type = "l")
+
 plot(density(z_geweke))
 curve(dnorm, add = TRUE, lty = 2)
 sum(abs(z_geweke) > 4)
@@ -182,7 +190,7 @@ tbl_ess = tbl_ess %>% add_row(
 # ----- VWS1 within Gibbs -----
 vws1_out = list()
 
-for (l in seq_along(nrow(tol_levels)))
+for (l in seq_len(nrow(tol_levels)))
 {
 	tol_suff = tol_levels$tol_suff[l]
 	tol_merge = tol_levels$tol_merge[l]
@@ -252,7 +260,7 @@ for (l in seq_along(nrow(tol_levels)))
 
 vws2_out = list()
 
-for (l in seq_along(nrow(tol_levels)))
+for (l in seq_len(nrow(tol_levels)))
 {
 	tol_suff = tol_levels$tol_suff[l]
 	tol_merge = tol_levels$tol_merge[l]
@@ -583,8 +591,7 @@ ggsave("sigma2-width-imh-vs-vws.pdf", g, width = 3.5, height = 3.5, unit="in")
 #	theme_light()
 # ggsave("region-updates-log10.pdf", g, width = 5, height = 3)
 
-
-
+# Table for main manuscript
 tbl_ess %>%
 	mutate(tol_merge = format(tol_merge, scientific = TRUE)) %>%
 	mutate(ess1 = format(ess1, digits = 2, big.mark = ",")) %>%
@@ -594,8 +601,51 @@ tbl_ess %>%
 	mutate(elapsed = sprintf("%0.2f", elapsed)) %>%
 	kable(format = "latex", linesep = "")
 
+# Table for supplement
+tbl_ess %>%
+	mutate(tol_merge = format(tol_merge, scientific = TRUE)) %>%
+	mutate(ess1 = format(ess1 / elapsed, digits = 2, big.mark = ",")) %>%
+	mutate(ess2 = format(ess2 / elapsed, digits = 2, big.mark = ",")) %>%
+	mutate(ess3 = format(ess3 / elapsed, digits = 2, big.mark = ",")) %>%
+	mutate(rejections = format(rejections, digits = 2, big.mark = ",", scientific = FALSE)) %>%
+	mutate(elapsed = sprintf("%0.2f", elapsed)) %>%
+	kable(format = "latex", linesep = "")
+
 # Summaries of the regression parameters
 xtable(summary(imh_out), digits=3)
 xtable(summary(vws1_out[[1]]), digits=3)
 
 save.image("results.Rdata")
+
+# ----- Experimental: Gelman-Rubin Diagnostic -----
+# Run three additional chains with IMH and then diagnose the four together.
+imh2_out = gibbs_joint(y, s2, X, Z, df, init, control)
+imh3_out = gibbs_joint(y, s2, X, Z, df, init, control)
+imh4_out = gibbs_joint(y, s2, X, Z, df, init, control)
+
+# TBD: can we get the statistic for all m sigma2 entries, or is that too much?
+ess_sigma2 = ess(imh_out$sigma2_hist)
+# lowest_imh = order(ess_sigma2)[1:3]
+lowest_imh = 1:m
+
+# Try Gelman-Rubin with coda package on IMH.
+mcmc_list = mcmc.list(
+	as.mcmc(imh_out$sigma2_hist[,lowest_imh]),
+	as.mcmc(imh2_out$sigma2_hist[,lowest_imh]),
+	as.mcmc(imh3_out$sigma2_hist[,lowest_imh]),
+	as.mcmc(imh4_out$sigma2_hist[,lowest_imh])
+)
+gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
+
+# Try Gelman-Rubin with coda package on VWS. Base it on the four runs of VWS1.
+# It shouldn't matter that they are based on different tunings of the rejection
+# sampler.
+
+mcmc_list = mcmc.list(
+	as.mcmc(vws1_out[[1]]$sigma2_hist[,lowest_imh]),
+	as.mcmc(vws1_out[[2]]$sigma2_hist[,lowest_imh]),
+	as.mcmc(vws1_out[[3]]$sigma2_hist[,lowest_imh]),
+	as.mcmc(vws1_out[[4]]$sigma2_hist[,lowest_imh])
+)
+gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
+
