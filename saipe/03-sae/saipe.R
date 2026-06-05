@@ -5,6 +5,8 @@ library(mcmcse)
 library(coda)
 library(knitr)
 
+source("../shared/functions.R", chdir = TRUE)
+
 # Set a seed
 set.seed(1234)
 
@@ -26,34 +28,21 @@ tol_levels = expand.grid(
 
 run_vws0 = TRUE
 
-# For plotting a function that is generally increasing, find the first index
-# where we cross tol percent of the max. If the function is generally
-# increasing, find the first index where the min is larger than tol percent of
-# the series.
-first_cross = function(x, tol, max = TRUE) {
-	if (max) {
-		idx = which(x >= tol*max(x))
-	} else {
-		idx = which(min(x) >= tol*x)
-	}
-	return(idx[1])
-}
-
 # ----- Data setup -----
 ff = file.path("..", "data", "saipe.csv")
-dat_saipe = read_csv(ff) %>%
+saipe = read_csv(ff) %>%
 	mutate(df = 0.36 * sqrt(hu_sampled)) %>%
 	mutate(y = log(pov_count)) %>%
 	mutate(s2 = pov_se^2 / pov_count^2) %>%
 	filter(pov_count > 1 & df > 1) %>%
 	filter(!is.na(snap)) # Removing one county with missing snap
 
-m = nrow(dat_saipe)
-X = model.matrix(~ log1p(snap) + log1p(pep), data = dat_saipe)
-Z = model.matrix(~ log(hu_sampled) , data = dat_saipe)
-df = dat_saipe$df
-y = dat_saipe$y
-s2 = dat_saipe$s2
+m = nrow(saipe)
+X = model.matrix(~ log1p(snap) + log1p(pep), data = saipe)
+Z = model.matrix(~ log(hu_sampled) , data = saipe)
+df = saipe$df
+y = saipe$y
+s2 = saipe$s2
 d1 = ncol(X)
 d2 = ncol(Z)
 
@@ -232,47 +221,16 @@ for (l in seq_along(nrow(tol_levels)))
 	sum(abs(z_geweke) > 4)
 	sum(z_geweke < -3.5)
 
-	iter_first = first_cross(gibbs_out$sigma2_rejects_hist, 0.70, max = FALSE)
-
-	# iter_first = first_cross(gibbs_out$sigma2_tunes_hist, tol = 0.005, max = FALSE)
-	g = data.frame(updates = gibbs_out$sigma2_tunes_hist) %>%
-		mutate(iter = row_number()) %>%
-		filter(iter > iter_first) %>%
-		ggplot() +
-		geom_line(aes(iter, updates)) +
-		xlab(NULL) +
-		ylab("Number of Region Updates") +
-		scale_x_continuous(n.breaks = 9) +
-		scale_y_continuous(n.breaks = 10, expand = expansion()) +
-		theme_light()
-	ff = sprintf("region-updates-vws1-%d.pdf", l)
+	g = plot_tunes(gibbs_out$sigma2_tunes_hist, burn = 500, tol = 0.05)
+	ff = sprintf("tunes-vws1-%d.pdf", l)
 	ggsave(ff, g, width = 5, height = 3)
 
-	# iter_first = first_cross(gibbs_out$sigma2_comps_hist, 0.95, max = TRUE)
-	g = data.frame(count = gibbs_out$sigma2_comps_hist) %>%
-		mutate(iter = row_number()) %>%
-		filter(iter >= iter_first) %>%
-		ggplot() +
-		geom_line(aes(iter, count)) +
-		xlab(NULL) +
-		ylab("Number of Regions") +
-		scale_x_continuous(n.breaks = 9) +
-		scale_y_continuous(n.breaks = 10, expand = expansion()) +
-		theme_light()
-	ff = sprintf("region-counts-vws1-%d.pdf", l)
+	g = plot_comps(gibbs_out$sigma2_comps_hist, burn = 500, tol = 0.05)
+	ff = sprintf("comps-vws1-%d.pdf", l)
 	ggsave(ff, g, width = 5, height = 3)
 
-	g = data.frame(count = gibbs_out$sigma2_rejects_hist) %>%
-		mutate(iter = row_number()) %>%
-		filter(iter > iter_first) %>%
-		ggplot() +
-		geom_line(aes(iter, count)) +
-		xlab(NULL) +
-		ylab("Number of Rejections") +
-		scale_x_continuous(n.breaks = 9) +
-		scale_y_continuous(n.breaks = 10, expand = expansion()) +
-		theme_light()
-	ff = sprintf("rejection-counts-vws1-%d.pdf", l)
+	g = plot_rejects(gibbs_out$sigma2_rejects_hist, burn = 500, tol = 0.05)
+	ff = sprintf("rejects-vws1-%d.pdf", l)
 	ggsave(ff, g, width = 5, height = 3)
 
 	tbl_ess = tbl_ess %>% add_row(
@@ -298,9 +256,10 @@ for (l in seq_along(nrow(tol_levels)))
 {
 	tol_suff = tol_levels$tol_suff[l]
 	tol_merge = tol_levels$tol_merge[l]
+	tune = 100
 
 	inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
-		max_rejects = 1e6, method = "vws-tune", N = 50, tune = 100)
+		max_rejects = 1e6, method = "vws-tune", N = 50, tune = tune)
 	control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
 		inner = inner_ctrl, save_latent = seq_len(m))
 	gibbs_out = gibbs_joint(y, s2, X, Z, df, init, control)
@@ -310,6 +269,18 @@ for (l in seq_along(nrow(tol_levels)))
 
 	i = which.min(ess_sigma2)
 	plot(gibbs_out$sigma2_hist[,i], type = "l")
+
+	g = plot_tunes(gibbs_out$sigma2_tunes_hist[1:tune], burn = 0, tol = 1.00)
+	ff = sprintf("tunes-vws2-%d.pdf", l)
+	ggsave(ff, g, width = 5, height = 3)
+
+	g = plot_comps(gibbs_out$sigma2_comps_hist[1:tune], burn = 0, tol = 1.00)
+	ff = sprintf("comps-vws2-%d.pdf", l)
+	ggsave(ff, g, width = 5, height = 3)
+
+	g = plot_rejects(gibbs_out$sigma2_rejects_hist[1:tune], burn = 0, tol = 1.00)
+	ff = sprintf("rejects-vws2-%d.pdf", l)
+	ggsave(ff, g, width = 5, height = 3)
 
 	tbl_ess = tbl_ess %>% add_row(
 		method = "VWS2",
@@ -376,8 +347,12 @@ if (run_vws0)
 	quantile(ess_sigma2, probs)
 	quantile(ess_theta, probs)
 
+	g = plot_rejects(vws0_out$sigma2_rejects_hist, burn = 0, tol = 1.0)
+	ff = sprintf("rejects-vws0-%d.pdf", l)
+	ggsave(ff, g, width = 5, height = 3)
+
 	tbl_ess = tbl_ess %>% add_row(
-		method = "VWS2",
+		method = "VWS0",
 		tol_suff = tol_suff,
 		tol_merge = tol_merge,
 		ess1 = quantile(ess_sigma2, probs[1]),
@@ -387,7 +362,6 @@ if (run_vws0)
 		rejections = sum(vws0_out$sigma2_rejects_hist)
 	)
 }
-
 
 # ----- Create some plots from the results -----
 
@@ -402,7 +376,7 @@ g = data.frame(s2 = s2, joint = apply(vws1_out[[1]]$sigma2_hist, 2, mean)) %>%
 ggsave("variance-model-vs-estimated.pdf", g, width = 4, height = 4, unit="in")
 
 # Model uncertainty in sigma2 versus area sample size
-g = data.frame(df = dat_saipe$df, log_n = log(dat_saipe$hu_sampled), s2 = s2,
+g = data.frame(df = saipe$df, log_n = log(saipe$hu_sampled), s2 = s2,
 		lo = apply(vws1_out[[1]]$sigma2_hist, 2, quantile, probs = alpha/2),
 		hi = apply(vws1_out[[1]]$sigma2_hist, 2, quantile, probs = 1-alpha/2)) %>%
 	mutate(width = hi - lo) %>%
@@ -416,7 +390,7 @@ ggsave("variance-ci-width.pdf", g, width = 4, height = 4)
 # Plot model uncertainty in theta from VWS versus FH. Ratio of CI widths versus
 # area sample size.
 g = data.frame(
-		log_n = log(dat_saipe$hu_sampled),
+		log_n = log(saipe$hu_sampled),
 		vws_lo = apply(vws1_out[[1]]$theta_hist, 2, quantile, probs = alpha/2),
 		vws_hi = apply(vws1_out[[1]]$theta_hist, 2, quantile, probs = 1-alpha/2),
 		fh_lo = apply(fh_out$theta_hist, 2, quantile, probs = alpha/2),
@@ -474,16 +448,19 @@ ggsave("sigma2-ess-ecdf.pdf", g, width = 4, height = 3)
 # Overlay trace plot for the VWS and IMH sigma2
 # Pick the 3 counties with worst IMH chains for sigma2
 # and 3 counties with worst VWS chains
-lowest_imh = order(ess_imh_sigma2)[1:3]
-lowest_vws = order(ess_vws_sigma2)[1:3]
-
+ess_imh = ess(imh_out$sigma2_hist)
+ess_imh[is.na(ess_imh)] = 0
+ess_vws = ess(vws1_out[[1]]$sigma2_hist)
+lowest_imh = order(ess_imh)[1:3]
+lowest_vws = order(ess_vws)[1:3]
 plot_ess = c(lowest_imh, lowest_vws)
 
 for (ii in 1:length(plot_ess)) {
 	idx = plot_ess[ii]
+
 	g = data.frame(
 			imh = imh_out$sigma2_hist[,idx],
-			vws = vws_out$sigma2_hist[,idx]) %>%
+			vws = vws1_out[[1]]$sigma2_hist[,idx]) %>%
 		mutate(x = row_number()) %>%
 		ggplot() +
 		geom_line(aes(x=x, y=vws), color = "red2", alpha = 0.4) +
@@ -491,9 +468,45 @@ for (ii in 1:length(plot_ess)) {
 		xlab("") +
 		ylab(bquote(sigma[.(idx)]^2)) +
 		theme_minimal()
-	ff = sprintf("trace-%d.pdf", ii)
+	ff = sprintf("imh-trace-%d.pdf", ii)
 	ggsave(ff, g, width = 3, height = 2)
 }
+print(saipe[lowest_imh,])
+print(saipe[lowest_vws,])
+
+# Also look at the three worst mixing chains under AMH
+ess_amh = ess(amh_out$sigma2_hist)
+lowest_amh = order(ess_amh)[1:3]
+for (ii in 1:length(lowest_amh)) {
+	idx = lowest_amh[ii]
+	g = data.frame(amh = amh_out$sigma2_hist[,idx]) %>%
+		mutate(x = row_number()) %>%
+		ggplot() +
+		geom_line(aes(x=x, y=amh), linewidth = 0.5) +
+		xlab("") +
+		ylab(bquote(sigma[.(idx)]^2)) +
+		theme_minimal()
+	ff = sprintf("amh-trace-%d.pdf", ii)
+	ggsave(ff, g, width = 3, height = 2)
+}
+print(saipe[lowest_amh,])
+
+# Also look at the three worst mixing chains under ARMS
+ess_arms = ess(arms_out$sigma2_hist)
+lowest_arms = order(ess_arms)[1:3]
+for (ii in 1:length(lowest_arms)) {
+	idx = lowest_arms[ii]
+	g = data.frame(arms = arms_out$sigma2_hist[,idx]) %>%
+		mutate(x = row_number()) %>%
+		ggplot() +
+		geom_line(aes(x=x, y=arms), linewidth = 0.5) +
+		xlab("") +
+		ylab(bquote(sigma[.(idx)]^2)) +
+		theme_minimal()
+	ff = sprintf("arms-trace-%d.pdf", ii)
+	ggsave(ff, g, width = 3, height = 2)
+}
+print(saipe[lowest_arms,])
 
 # Plot of estimates of sigma_i^2 for VWS vs IMH with interval widths
 
@@ -533,7 +546,7 @@ data.frame(tuned = vws_out$sigma2_rejects_hist / m) %>%
 ## Compare sigma2 between IMH and VWS using scatter/hex plots
 
 g = data.frame(imh = sigma2_imh, vws = sigma2_vws) %>%
-	add_column(log_n = log(dat_saipe$hu_sampled)) %>%
+	add_column(log_n = log(saipe$hu_sampled)) %>%
 	mutate(ratio = imh / vws) %>%
 	add_column(ess_imh = ess_imh_sigma2) %>%
 	ggplot() +
@@ -546,7 +559,7 @@ g = data.frame(imh = sigma2_imh, vws = sigma2_vws) %>%
 ggsave("sigma2-est-imh-vs-vws.pdf", g, width = 3.5, height = 3.5, unit="in")
 
 g = data.frame(imh = sigma2_width_imh, vws = sigma2_width_vws) %>%
-	add_column(log_n = log(dat_saipe$hu_sampled)) %>%
+	add_column(log_n = log(saipe$hu_sampled)) %>%
 	add_column(ess_imh = ess_imh_sigma2) %>%
 	mutate(ratio = imh / vws) %>%
 	ggplot() +
