@@ -7,7 +7,6 @@ library(knitr)
 
 source("../shared/functions.R", chdir = TRUE)
 
-# Set a seed
 set.seed(1234)
 
 # Quantiles for ESS
@@ -200,15 +199,15 @@ for (l in seq_len(nrow(tol_levels)))
 
 	g = plot_tunes(gibbs_out$sigma2_tunes_hist, burn = 500, tol = 0.05)
 	ff = sprintf("tunes-vws1-%d.pdf", l)
-	ggsave(ff, g, width = 5, height = 3)
+	ggsave(ff, g, width = 3, height = 2)
 
 	g = plot_comps(gibbs_out$sigma2_comps_hist, burn = 500, tol = 0.05)
 	ff = sprintf("comps-vws1-%d.pdf", l)
-	ggsave(ff, g, width = 5, height = 3)
+	ggsave(ff, g, width = 3, height = 2)
 
 	g = plot_rejects(gibbs_out$sigma2_rejects_hist, burn = 500, tol = 0.05)
 	ff = sprintf("rejects-vws1-%d.pdf", l)
-	ggsave(ff, g, width = 5, height = 3)
+	ggsave(ff, g, width = 3, height = 2)
 
 	tbl_ess = tbl_ess %>% add_row(
 		method = "VWS1",
@@ -246,18 +245,6 @@ for (l in seq_len(nrow(tol_levels)))
 
 	# i = which.min(ess_sigma2)
 	# plot(gibbs_out$sigma2_hist[,i], type = "l")
-
-	g = plot_tunes(gibbs_out$sigma2_tunes_hist[1:tune], burn = 0, tol = 1.00)
-	ff = sprintf("tunes-vws2-%d.pdf", l)
-	ggsave(ff, g, width = 5, height = 3)
-
-	g = plot_comps(gibbs_out$sigma2_comps_hist[1:tune], burn = 0, tol = 1.00)
-	ff = sprintf("comps-vws2-%d.pdf", l)
-	ggsave(ff, g, width = 5, height = 3)
-
-	g = plot_rejects(gibbs_out$sigma2_rejects_hist[1:tune], burn = 0, tol = 1.00)
-	ff = sprintf("rejects-vws2-%d.pdf", l)
-	ggsave(ff, g, width = 5, height = 3)
 
 	tbl_ess = tbl_ess %>% add_row(
 		method = "VWS2",
@@ -313,7 +300,7 @@ if (run_vws0)
 {
 	inner_ctrl = control_inner(tol_suff = 0.85, tol_merge = 0.001,
 		max_rejects = 1e6, method = "vws-basic", N = 50)
-	control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1,
+	control = control_joint(R = 3000, burn = 1000, thin = 1, report = 50,
 		inner = inner_ctrl, save_latent = seq_len(m))
 	vws0_out = gibbs_joint(y, s2, X, Z, df, init, control)
 	print(vws0_out)
@@ -324,13 +311,12 @@ if (run_vws0)
 	# quantile(ess_theta, probs)
 
 	g = plot_rejects(vws0_out$sigma2_rejects_hist, burn = 0, tol = 1.0)
-	ff = sprintf("rejects-vws0-%d.pdf", l)
-	ggsave(ff, g, width = 5, height = 3)
+	ggsave("rejects-vws0.pdf", g, width = 3, height = 2)
 
 	tbl_ess = tbl_ess %>% add_row(
 		method = "VWS0",
-		tol_suff = tol_suff,
-		tol_merge = tol_merge,
+		tol_suff = NA,
+		tol_merge = NA,
 		ess1 = quantile(ess_sigma2, probs[1]),
 		ess2 = quantile(ess_sigma2, probs[2]),
 		ess3 = quantile(ess_sigma2, probs[3]),
@@ -344,7 +330,7 @@ save.image("results.Rdata")
 # ----- Plots from the results -----
 
 # Dot plot of joint sampling variances versus estimated
-g = data.frame(s2 = s2, joint = apply(vws1_out[[1]]$sigma2_hist, 2, mean)) %>%
+g = data.frame(s2 = s2, joint = apply(vws1_out[[4]]$sigma2_hist, 2, mean)) %>%
 	ggplot() +
 	geom_point(aes(s2, joint)) +
 	geom_abline(slope = 1, lty = 2, col = "red") +
@@ -355,8 +341,8 @@ ggsave("variance-model-vs-estimated.pdf", g, width = 4, height = 4, unit="in")
 
 # Model uncertainty in sigma2 versus area sample size
 g = data.frame(df = saipe$df, log_n = log(saipe$hu_sampled), s2 = s2,
-		lo = apply(vws1_out[[1]]$sigma2_hist, 2, quantile, probs = alpha/2),
-		hi = apply(vws1_out[[1]]$sigma2_hist, 2, quantile, probs = 1-alpha/2)) %>%
+		lo = apply(vws1_out[[4]]$sigma2_hist, 2, quantile, probs = alpha/2),
+		hi = apply(vws1_out[[4]]$sigma2_hist, 2, quantile, probs = 1-alpha/2)) %>%
 	mutate(width = hi - lo) %>%
 	ggplot() +
 	geom_point(aes(x = log_n, y = width)) +
@@ -369,8 +355,8 @@ ggsave("variance-ci-width.pdf", g, width = 4, height = 4)
 # area sample size.
 g = data.frame(
 		log_n = log(saipe$hu_sampled),
-		vws_lo = apply(vws1_out[[1]]$theta_hist, 2, quantile, probs = alpha/2),
-		vws_hi = apply(vws1_out[[1]]$theta_hist, 2, quantile, probs = 1-alpha/2),
+		vws_lo = apply(vws1_out[[4]]$theta_hist, 2, quantile, probs = alpha/2),
+		vws_hi = apply(vws1_out[[4]]$theta_hist, 2, quantile, probs = 1-alpha/2),
 		fh_lo = apply(fh_out$theta_hist, 2, quantile, probs = alpha/2),
 		fh_hi = apply(fh_out$theta_hist, 2, quantile, probs = 1-alpha/2)) %>%
 	mutate(vws_width = vws_hi - vws_lo) %>%
@@ -390,7 +376,7 @@ ggsave("theta-ci-ratio.pdf", g, width = 5, height = 5)
 # Overlay histograms of the ESS for sigma2
 # g = data.frame(
 #		imh = ess(imh_out$sigma2_hist),
-#		vws = ess(vws1_out[[1]]$sigma2_hist)) %>%
+#		vws = ess(vws1_out[[4]]$sigma2_hist)) %>%
 #	ggplot() +
 #	geom_histogram(aes(x = imh), col = "black", fill = "white", bins = 30, alpha = 0.4) +
 #	geom_histogram(aes(x = vws),  col = "black", fill = "red2", bins = 30, alpha = 0.4) +
@@ -403,7 +389,7 @@ df_plot = data.frame(
 		imh = ess(imh_out$sigma2_hist),
 		arms = ess(arms_out$sigma2_hist),
 		amh = ess(amh_out$sigma2_hist),
-		vws = ess(vws1_out[[1]]$sigma2_hist)) %>%
+		vws = ess(vws1_out[[4]]$sigma2_hist)) %>%
 	mutate(iter = row_number())
 df_quantiles = data.frame(probs = c(0.20, 0.40, 0.60, 0.80)) %>%
 	mutate(imh = quantile(df_plot$imh, probs, na.rm = TRUE)) %>%
@@ -428,29 +414,30 @@ ggsave("sigma2-ess-ecdf.pdf", g, width = 4, height = 3)
 # and 3 counties with worst VWS chains
 ess_imh = ess(imh_out$sigma2_hist)
 ess_imh[is.na(ess_imh)] = 0
-ess_vws = ess(vws1_out[[1]]$sigma2_hist)
+ess_vws = ess(vws1_out[[4]]$sigma2_hist)
 lowest_imh = order(ess_imh)[1:3]
 lowest_vws = order(ess_vws)[1:3]
 plot_ess = c(lowest_imh, lowest_vws)
+
+print(saipe[lowest_imh,])
+print(saipe[lowest_vws,])
 
 for (ii in 1:length(plot_ess)) {
 	idx = plot_ess[ii]
 
 	g = data.frame(
 			imh = imh_out$sigma2_hist[,idx],
-			vws = vws1_out[[1]]$sigma2_hist[,idx]) %>%
+			vws = vws1_out[[4]]$sigma2_hist[,idx]) %>%
 		mutate(x = row_number()) %>%
 		ggplot() +
 		geom_line(aes(x=x, y=vws), color = "red2", alpha = 0.4) +
 		geom_line(aes(x=x, y=imh), color = "blue", linewidth = 0.5, alpha = 1) +
 		xlab("") +
 		ylab(bquote(sigma[.(idx)]^2)) +
-		theme_minimal()
+		theme_light()
 	ff = sprintf("imh-trace-%d.pdf", ii)
 	ggsave(ff, g, width = 3, height = 2)
 }
-print(saipe[lowest_imh,])
-print(saipe[lowest_vws,])
 
 # Also look at the three worst mixing chains under AMH
 ess_amh = ess(amh_out$sigma2_hist)
@@ -463,7 +450,7 @@ for (ii in 1:length(lowest_amh)) {
 		geom_line(aes(x=x, y=amh), linewidth = 0.5) +
 		xlab("") +
 		ylab(bquote(sigma[.(idx)]^2)) +
-		theme_minimal()
+		theme_light()
 	ff = sprintf("amh-trace-%d.pdf", ii)
 	ggsave(ff, g, width = 3, height = 2)
 }
@@ -480,7 +467,7 @@ for (ii in 1:length(lowest_arms)) {
 		geom_line(aes(x=x, y=arms), linewidth = 0.5) +
 		xlab("") +
 		ylab(bquote(sigma[.(idx)]^2)) +
-		theme_minimal()
+		theme_light()
 	ff = sprintf("arms-trace-%d.pdf", ii)
 	ggsave(ff, g, width = 3, height = 2)
 }
@@ -489,13 +476,14 @@ print(saipe[lowest_arms,])
 # Plot of estimates of sigma_i^2 for VWS vs IMH with interval widths
 
 sigma2_imh = apply(imh_out$sigma2_hist, 2, mean)
-sigma2_vws = apply(vws_out$sigma2_hist, 2, mean)
+sigma2_vws = apply(vws1_out[[4]]$sigma2_hist, 2, mean)
 sigma2_sd_imh = apply(imh_out$sigma2_hist, 2, sd)
-sigma2_sd_vws = apply(vws_out$sigma2_hist, 2, sd)
+sigma2_sd_vws = apply(vws1_out[[4]]$sigma2_hist, 2, sd)
 sigma2_ci_imh = apply(imh_out$sigma2_hist, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
-sigma2_ci_vws = apply(vws_out$sigma2_hist, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
+sigma2_ci_vws = apply(vws1_out[[4]]$sigma2_hist, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
 sigma2_width_imh = apply(sigma2_ci_imh, 1, diff)
 sigma2_width_vws = apply(sigma2_ci_vws, 1, diff)
+ess_imh_sigma2 = ess(imh_out$sigma2_hist)
 
 # Plot number of tuned VWS proposals by iteration
 data.frame(tuned = vws_out$sigma2_tuned_hist) %>%
@@ -534,7 +522,7 @@ g = data.frame(imh = sigma2_imh, vws = sigma2_vws) %>%
 	ylab('Ratio of Estimates') +
 	scale_fill_viridis_c() +
 	theme_light()
-ggsave("sigma2-est-imh-vs-vws.pdf", g, width = 3.5, height = 3.5, unit="in")
+ggsave("sigma2-est-imh-vs-vws.pdf", g, width = 4, height = 3, unit="in")
 
 g = data.frame(imh = sigma2_width_imh, vws = sigma2_width_vws) %>%
 	add_column(log_n = log(saipe$hu_sampled)) %>%
@@ -548,7 +536,7 @@ g = data.frame(imh = sigma2_width_imh, vws = sigma2_width_vws) %>%
 	scale_fill_viridis_c() +
 	# scale_y_continuous(limits = c(0, 2)) +
 	theme_light()
-ggsave("sigma2-width-imh-vs-vws.pdf", g, width = 3.5, height = 3.5, unit="in")
+ggsave("sigma2-width-imh-vs-vws.pdf", g, width = 4, height = 3, unit="in")
 
 # g = data.frame(updates = vws_out$sigma2_tunes_hist) %>%
 #	mutate(iter = row_number()) %>%
@@ -561,31 +549,75 @@ ggsave("sigma2-width-imh-vs-vws.pdf", g, width = 3.5, height = 3.5, unit="in")
 #	theme_light()
 # ggsave("region-updates-log10.pdf", g, width = 5, height = 3)
 
+# Plot rejections for VWS with limited tuning period. Omit iterations during
+# the tuning period.
+for (l in 1:nrow(tol_levels)) {
+	g = vws2_out[[l]]$sigma2_rejects_hist %>%
+		tail(-tune) %>%
+		plot_rejects(burn = 0, tol = 100)
+	ff = sprintf("rejects-vws2-%d-tail.pdf", l)
+	ggsave(ff, g, width = 3, height = 2)
+}
+
 # ----- Tables to summarize MCMC results -----
 
-# Table for main manuscript
 tbl_ess %>%
 	mutate(tol_merge = format(tol_merge, scientific = TRUE)) %>%
+	mutate(ess1_sec = format(ess1 / elapsed, digits = 2, big.mark = ",")) %>%
+	mutate(ess2_sec = format(ess2 / elapsed, digits = 2, big.mark = ",")) %>%
+	mutate(ess3_sec = format(ess3 / elapsed, digits = 2, big.mark = ",")) %>%
 	mutate(ess1 = format(ess1, digits = 2, big.mark = ",")) %>%
 	mutate(ess2 = format(ess2, digits = 2, big.mark = ",")) %>%
 	mutate(ess3 = format(ess3, digits = 2, big.mark = ",")) %>%
 	mutate(rejections = format(rejections, digits = 2, big.mark = ",", scientific = FALSE)) %>%
 	mutate(elapsed = sprintf("%0.2f", elapsed)) %>%
-	kable(format = "latex", linesep = "")
-
-# Table for supplement
-tbl_ess %>%
-	mutate(tol_merge = format(tol_merge, scientific = TRUE)) %>%
-	mutate(ess1 = format(ess1 / elapsed, digits = 2, big.mark = ",")) %>%
-	mutate(ess2 = format(ess2 / elapsed, digits = 2, big.mark = ",")) %>%
-	mutate(ess3 = format(ess3 / elapsed, digits = 2, big.mark = ",")) %>%
-	mutate(rejections = format(rejections, digits = 2, big.mark = ",", scientific = FALSE)) %>%
-	mutate(elapsed = sprintf("%0.2f", elapsed)) %>%
+	select(method, tol_suff, tol_merge, rejections, elapsed, ess1, ess2, ess3,
+		ess1_sec, ess2_sec, ess3_sec) %>%
 	kable(format = "latex", linesep = "")
 
 # Summaries of the regression parameters
-xtable(summary(imh_out), digits=3)
-xtable(summary(vws1_out[[1]]), digits=3)
+xtable(summary(imh_out), digits = 4)
+xtable(summary(vws1_out[[4]]), digits = 4)
+
+s_imh = summary(imh_out)
+s_amh = summary(arms_out)
+s_arms = summary(arms_out)
+s_vws0 = summary(vws0_out)
+s_vws1_1 = summary(vws1_out[[1]])
+s_vws1_2 = summary(vws1_out[[2]])
+s_vws1_3 = summary(vws1_out[[3]])
+s_vws1_4 = summary(vws1_out[[4]])
+s_vws2_1 = summary(vws2_out[[1]])
+s_vws2_2 = summary(vws2_out[[2]])
+s_vws2_3 = summary(vws2_out[[3]])
+s_vws2_4 = summary(vws2_out[[4]])
+
+res_theta_ess = rbind(
+	s_imh$ess,
+	s_amh$ess,
+	s_arms$ess,
+	s_vws0$ess,
+	s_vws1_1$ess,
+	s_vws1_2$ess,
+	s_vws1_3$ess,
+	s_vws1_4$ess,
+	s_vws2_1$ess,
+	s_vws2_2$ess,
+	s_vws2_3$ess,
+	s_vws2_4$ess
+) %>% round() %>% format(big.mark = ",")
+colnames(res_theta_ess) = rownames(s_imh)
+method = c("IMH", "AMH", "ARMS", "VWS0", rep("VWS1", 4), rep("VWS2", 4))
+tol_suff = c(rep(NA, 4), tol_levels$tol_suff, tol_levels$tol_suff)
+tol_merge = c(rep(NA, 4), tol_levels$tol_merge, tol_levels$tol_merge)
+tbl_theta_ess = res_theta_ess %>%
+	as.data.frame() %>%
+	add_column(method) %>%
+	add_column(tol_suff) %>%
+	add_column(tol_merge) %>%
+	select(method, tol_suff, tol_merge, everything())
+kable(tbl_theta_ess, format = "latex", linesep = "")
+
 
 # ----- Experimental: Gelman-Rubin Diagnostic -----
 # Run three additional chains with IMH and then diagnose the four together.

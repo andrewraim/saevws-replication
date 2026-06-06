@@ -84,9 +84,9 @@ plot_tunes = function(x, burn, tol = 0.10)
 		ggplot() +
 		geom_line(aes(iter, updates)) +
 		xlab("Iteration") +
-		ylab("Number of Region Updates") +
+		ylab("Tunes") +
 		scale_x_continuous(
-			n.breaks = 9,
+			n.breaks = 5,
 			expand = expansion(mult = c(0, 0.05), add = c(1, 0))) +
 		scale_y_continuous(
 			n.breaks = 10,
@@ -115,9 +115,9 @@ plot_comps = function(x, burn, tol = 0.01)
 		ggplot() +
 		geom_line(aes(iter, count)) +
 		xlab("Iteration") +
-		ylab("Number of Regions") +
+		ylab("Regions") +
 		scale_x_continuous(
-			n.breaks = 9,
+			n.breaks = 5,
 			expand = expansion(mult = c(0, 0.05), add = c(1, 0))) +
 		scale_y_continuous(
 			n.breaks = 10,
@@ -146,9 +146,9 @@ plot_rejects = function(x, burn, tol = 0.20)
 		ggplot() +
 		geom_line(aes(iter, count)) +
 		xlab("Iteration") +
-		ylab("Number of Rejections") +
+		ylab("Rejections") +
 		scale_x_continuous(
-			n.breaks = 9,
+			n.breaks = 5,
 			expand = expansion(mult = c(0, 0.05), add = c(1, 0))) +
 		scale_y_continuous(
 			n.breaks = 10,

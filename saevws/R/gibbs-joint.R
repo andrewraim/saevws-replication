@@ -255,4 +255,3 @@ print.gibbs_joint = function(x, pr = c(0.05, 0.95), ...)
 	rownames(tab) = ""
 	print(tab)
 }
-
