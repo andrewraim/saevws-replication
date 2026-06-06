@@ -1,7 +1,7 @@
 library(tidyverse)
-library(xtable)
 library(saevws)
 library(mcmcse)
+library(xtable)
 library(coda)
 library(knitr)
 
@@ -57,7 +57,7 @@ tau2_init = sigma(lm2_out)^2
 init = init_joint(m, d1, d2, beta = beta_init, gamma = gamma_init, sigma2 = s2,
 	phi2 = phi2_init, tau2 = tau2_init)
 
-# ----- Independent Metropolis within Gibbs -----
+# ----- IMH within Gibbs -----
 inner_ctrl = control_inner(method = "imh")
 control = control_joint(R = 30000, burn = 28000, thin = 1, report = 1000,
 	inner = inner_ctrl, save_latent = seq_len(m))
@@ -98,7 +98,7 @@ tbl_ess = tibble(
 	rejections = sum(imh_out$sigma2_rejects_hist)
 )
 
-# ----- Adaptive Metropolis-Hastings within Gibbs -----
+# ----- AMH within Gibbs -----
 inner_ctrl = control_inner(method = "amh", am_varprop_init = 1)
 control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1000,
 	inner = inner_ctrl, save_latent = seq_len(m))
@@ -159,6 +159,34 @@ tbl_ess = tbl_ess %>% add_row(
 	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(arms_out$elapsed)),
 	rejections = sum(arms_out$sigma2_rejects_hist)
+)
+
+# ----- VWS0 within Gibbs -----
+# Construct a new proposal whenever a sigma2 step is encountered.
+inner_ctrl = control_inner(tol_suff = 0.85, tol_merge = 0.001,
+	max_rejects = 1e6, method = "vws-basic", N = 50)
+control = control_joint(R = 3000, burn = 1000, thin = 1, report = 50,
+	inner = inner_ctrl, save_latent = seq_len(m))
+vws0_out = gibbs_joint(y, s2, X, Z, df, init, control)
+print(vws0_out)
+
+ess_sigma2 = ess(vws0_out$sigma2_hist)
+# ess_theta = ess(vws0_out$theta_hist)
+# quantile(ess_sigma2, probs)
+# quantile(ess_theta, probs)
+
+g = plot_rejects(vws0_out$sigma2_rejects_hist, burn = 0, tol = 1.0)
+ggsave("rejects-vws0.pdf", g, width = 3, height = 2)
+
+tbl_ess = tbl_ess %>% add_row(
+	method = "VWS0",
+	tol_suff = NA,
+	tol_merge = NA,
+	ess1 = quantile(ess_sigma2, probs[1]),
+	ess2 = quantile(ess_sigma2, probs[2]),
+	ess3 = quantile(ess_sigma2, probs[3]),
+	elapsed = sum(unlist(vws0_out$elapsed)),
+	rejections = sum(vws0_out$sigma2_rejects_hist)
 )
 
 # ----- VWS1 within Gibbs -----
@@ -292,42 +320,9 @@ fixed_fh = fixed_joint(gamma = TRUE, tau2 = TRUE, sigma2 = TRUE)
 fh_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed_fh)
 print(fh_out)
 
-# ----- VWS0 within Gibbs -----
-# Construct a new proposal whenever a sigma2 step is encountered.
-# This takes a while to run, so do it last, and only if switch is enabled.
-
-if (run_vws0)
-{
-	inner_ctrl = control_inner(tol_suff = 0.85, tol_merge = 0.001,
-		max_rejects = 1e6, method = "vws-basic", N = 50)
-	control = control_joint(R = 3000, burn = 1000, thin = 1, report = 50,
-		inner = inner_ctrl, save_latent = seq_len(m))
-	vws0_out = gibbs_joint(y, s2, X, Z, df, init, control)
-	print(vws0_out)
-
-	ess_sigma2 = ess(vws0_out$sigma2_hist)
-	# ess_theta = ess(vws0_out$theta_hist)
-	# quantile(ess_sigma2, probs)
-	# quantile(ess_theta, probs)
-
-	g = plot_rejects(vws0_out$sigma2_rejects_hist, burn = 0, tol = 1.0)
-	ggsave("rejects-vws0.pdf", g, width = 3, height = 2)
-
-	tbl_ess = tbl_ess %>% add_row(
-		method = "VWS0",
-		tol_suff = NA,
-		tol_merge = NA,
-		ess1 = quantile(ess_sigma2, probs[1]),
-		ess2 = quantile(ess_sigma2, probs[2]),
-		ess3 = quantile(ess_sigma2, probs[3]),
-		elapsed = sum(unlist(vws0_out$elapsed)),
-		rejections = sum(vws0_out$sigma2_rejects_hist)
-	)
-}
-
 save.image("results.Rdata")
 
-# ----- Plots from the results -----
+# ----- Additional Plots -----
 
 # Dot plot of joint sampling variances versus estimated
 g = data.frame(s2 = s2, joint = apply(vws1_out[[4]]$sigma2_hist, 2, mean)) %>%
@@ -486,28 +481,28 @@ sigma2_width_vws = apply(sigma2_ci_vws, 1, diff)
 ess_imh_sigma2 = ess(imh_out$sigma2_hist)
 
 # Plot number of tuned VWS proposals by iteration
-data.frame(tuned = vws_out$sigma2_tuned_hist) %>%
-	mutate(iter = row_number()) %>%
-	filter(iter > 100) %>%
-	ggplot() +
-	geom_line(aes(iter, tuned)) +
-	geom_rect(xmin = 0, xmax = 100,  ymin = 0,  ymax = Inf, fill = "red") +
-	scale_y_continuous(breaks = seq(0, 95, by = 5), minor_breaks = NULL) +
-	xlab("Iteration") +
-	ylab("Number of Tuned VWS Proposals") +
-	theme_minimal()
+# data.frame(tuned = vws_out$sigma2_tuned_hist) %>%
+# 	mutate(iter = row_number()) %>%
+# 	filter(iter > 100) %>%
+# 	ggplot() +
+# 	geom_line(aes(iter, tuned)) +
+# 	geom_rect(xmin = 0, xmax = 100,  ymin = 0,  ymax = Inf, fill = "red") +
+# 	scale_y_continuous(breaks = seq(0, 95, by = 5), minor_breaks = NULL) +
+# 	xlab("Iteration") +
+# 	ylab("Number of Tuned VWS Proposals") +
+# 	theme_minimal()
 
 # Plot number of VWS rejections per area by iteration
-data.frame(tuned = vws_out$sigma2_rejects_hist / m) %>%
-	mutate(iter = row_number()) %>%
-	filter(iter > 100) %>%
-	ggplot() +
-	geom_line(aes(iter, tuned)) +
-	geom_rect(xmin = 0, xmax = 20, ymin = min(vws_out$sigma2_rejects_hist / m),
-		ymax = Inf, fill = "red") +
-	xlab("Iteration") +
-	ylab("Number of VWS Rejections Per Area") +
-	theme_minimal()
+# data.frame(tuned = vws_out$sigma2_rejects_hist / m) %>%
+# 	mutate(iter = row_number()) %>%
+# 	filter(iter > 100) %>%
+# 	ggplot() +
+# 	geom_line(aes(iter, tuned)) +
+# 	geom_rect(xmin = 0, xmax = 20, ymin = min(vws_out$sigma2_rejects_hist / m),
+# 		ymax = Inf, fill = "red") +
+# 	xlab("Iteration") +
+# 	ylab("Number of VWS Rejections Per Area") +
+# 	theme_minimal()
 
 ## Compare sigma2 between IMH and VWS using scatter/hex plots
 
@@ -560,9 +555,8 @@ for (l in 1:nrow(tol_levels)) {
 }
 
 # ----- Tables to summarize MCMC results -----
-
 tbl_ess %>%
-	mutate(tol_merge = format(tol_merge, scientific = TRUE)) %>%
+	mutate(tol_merge = format(tol_merge, scientific = FALSE)) %>%
 	mutate(ess1_sec = format(ess1 / elapsed, digits = 2, big.mark = ",")) %>%
 	mutate(ess2_sec = format(ess2 / elapsed, digits = 2, big.mark = ",")) %>%
 	mutate(ess3_sec = format(ess3 / elapsed, digits = 2, big.mark = ",")) %>%
@@ -617,7 +611,6 @@ tbl_theta_ess = res_theta_ess %>%
 	add_column(tol_merge) %>%
 	select(method, tol_suff, tol_merge, everything())
 kable(tbl_theta_ess, format = "latex", linesep = "")
-
 
 # ----- Experimental: Gelman-Rubin Diagnostic -----
 # Run three additional chains with IMH and then diagnose the four together.
