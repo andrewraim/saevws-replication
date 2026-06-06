@@ -65,41 +65,28 @@ control = control_joint(R = 30000, burn = 28000, thin = 1, report = 1000,
 imh_out = gibbs_joint(y, s2, X, Z, df, init, control)
 print(imh_out)
 
-# TBD: Geweke diagnostic seems about to detect the worst mixing chains. But how
-# to summarize it in a table for results?
-
-z_geweke = geweke(imh_out$sigma2_hist)
-pval = pnorm(2 * abs(z_geweke), lower.tail = FALSE)
-idx = order(pval)[1:6]
-pval[idx]
-plot(imh_out$sigma2_hist[,idx[6]], type = "l")
-
-plot(density(z_geweke))
-curve(dnorm, add = TRUE, lty = 2)
-sum(abs(z_geweke) > 4)
-sum(z_geweke < -3.5)
-
 # Sort areas by rejection count and plot them against some respective data
-hist(imh_out$sigma2_rejects_areas)
-idx = order(imh_out$sigma2_rejects_areas)
-plot(sort(imh_out$sigma2_rejects_areas), y[idx])
-plot(sort(imh_out$sigma2_rejects_areas), df[idx])
-plot(sort(imh_out$sigma2_rejects_areas), s2[idx])
+# hist(imh_out$sigma2_rejects_areas)
+# idx = order(imh_out$sigma2_rejects_areas)
+# plot(sort(imh_out$sigma2_rejects_areas), y[idx])
+# plot(sort(imh_out$sigma2_rejects_areas), df[idx])
+# plot(sort(imh_out$sigma2_rejects_areas), s2[idx])
 
-## Convert any NaN values of ESS (i.e., no chain movement) to zero
+## A few of the sigma2 chains are likely not to move. The ESS function produces
+## an NaN for them. Convert them to zero.
 ess_sigma2 = ess(imh_out$sigma2_hist)
 ess_sigma2[is.na(ess_sigma2)] = 0
-ess_theta = ess(imh_out$theta_hist)
-quantile(ess_sigma2, probs)
-quantile(ess_theta, probs)
+# ess_theta = ess(imh_out$theta_hist)
+# quantile(ess_sigma2, probs)
+# quantile(ess_theta, probs)
 
-par_mcmc = cbind(imh_out$beta_hist, imh_out$gamma_hist,
-	imh_out$phi2_hist, imh_out$tau2_hist)
-multiESS(imh_out$beta_hist)
-multiESS(imh_out$gamma_hist)
-ess(imh_out$phi2_hist)
-ess(imh_out$tau2_hist)
-multiESS(par_mcmc)
+# par_mcmc = cbind(imh_out$beta_hist, imh_out$gamma_hist,
+#	imh_out$phi2_hist, imh_out$tau2_hist)
+# multiESS(imh_out$beta_hist)
+# multiESS(imh_out$gamma_hist)
+# ess(imh_out$phi2_hist)
+# ess(imh_out$tau2_hist)
+# multiESS(par_mcmc)
 
 tbl_ess = tibble(
 	method = "IMH",
@@ -119,24 +106,18 @@ control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1000,
 amh_out = gibbs_joint(y, s2, X, Z, df, init, control)
 print(amh_out)
 
-plot(amh_out$beta_hist[,1], type = "l")
-plot(amh_out$gamma_hist[,1], type = "l")
-plot(amh_out$phi2_hist, type = "l")
-plot(amh_out$tau2_hist, type = "l")
+# plot(amh_out$beta_hist[,1], type = "l")
+# plot(amh_out$gamma_hist[,1], type = "l")
+# plot(amh_out$phi2_hist, type = "l")
+# plot(amh_out$tau2_hist, type = "l")
 
 ess_sigma2 = ess(amh_out$sigma2_hist)
-ess_theta = ess(amh_out$theta_hist)
+# ess_theta = ess(amh_out$theta_hist)
 
-i = which.min(ess_sigma2)
-plot(amh_out$sigma2_hist[,i], type = "l")
+# i = which.min(ess_sigma2)
+# plot(amh_out$sigma2_hist[,i], type = "l")
 
-hist(ess_sigma2)
-
-z_geweke = geweke(amh_out$sigma2_hist)
-plot(density(z_geweke))
-curve(dnorm, add = TRUE, lty = 2)
-sum(abs(z_geweke) > 4)
-sum(z_geweke < -3.5)
+# hist(ess_sigma2)
 
 tbl_ess = tbl_ess %>% add_row(
 	method = "AMH",
@@ -156,25 +137,19 @@ control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
 arms_out = gibbs_joint(y, s2, X, Z, df, init, control)
 print(arms_out)
 
-plot(arms_out$beta_hist[,1], type = "l")
-plot(arms_out$gamma_hist[,1], type = "l")
-plot(arms_out$phi2_hist, type = "l")
-plot(arms_out$tau2_hist, type = "l")
+# plot(arms_out$beta_hist[,1], type = "l")
+# plot(arms_out$gamma_hist[,1], type = "l")
+# plot(arms_out$phi2_hist, type = "l")
+# plot(arms_out$tau2_hist, type = "l")
 
 ess_sigma2 = ess(arms_out$sigma2_hist)
-ess_theta = ess(arms_out$theta_hist)
-quantile(ess_sigma2, probs)
-quantile(ess_theta, probs)
+# ess_theta = ess(arms_out$theta_hist)
+# quantile(ess_sigma2, probs)
+# quantile(ess_theta, probs)
 
-i = which.min(ess_sigma2)
-plot(arms_out$sigma2_hist[,i], type = "l")
-hist(ess_sigma2)
-
-z_geweke = geweke(arms_out$sigma2_hist)
-plot(density(z_geweke))
-curve(dnorm, add = TRUE, lty = 2)
-sum(abs(z_geweke) > 4)
-sum(z_geweke < -3.5)
+# i = which.min(ess_sigma2)
+# plot(arms_out$sigma2_hist[,i], type = "l")
+# hist(ess_sigma2)
 
 tbl_ess = tbl_ess %>% add_row(
 	method = "ARMS",
@@ -202,15 +177,15 @@ for (l in seq_len(nrow(tol_levels)))
 	gibbs_out = gibbs_joint(y, s2, X, Z, df, init, control)
 	print(gibbs_out)
 
-	plot(gibbs_out$beta_hist[,1], type = "l")
-	plot(gibbs_out$gamma_hist[,1], type = "l")
-	plot(gibbs_out$phi2_hist, type = "l")
-	plot(gibbs_out$tau2_hist, type = "l")
+	# plot(gibbs_out$beta_hist[,1], type = "l")
+	# plot(gibbs_out$gamma_hist[,1], type = "l")
+	# plot(gibbs_out$phi2_hist, type = "l")
+	# plot(gibbs_out$tau2_hist, type = "l")
 
 	ess_sigma2 = ess(gibbs_out$sigma2_hist)
-	ess_theta = ess(gibbs_out$theta_hist)
-	quantile(ess_sigma2, probs)
-	quantile(ess_theta, probs)
+	# ess_theta = ess(gibbs_out$theta_hist)
+	# quantile(ess_sigma2, probs)
+	# quantile(ess_theta, probs)
 
 	# par_vws_mcmc = cbind(gibbs_out$beta_hist, gibbs_out$gamma_hist,
 	#	gibbs_out$phi2_hist, gibbs_out$tau2_hist)
@@ -220,14 +195,8 @@ for (l in seq_len(nrow(tol_levels)))
 	# ess(gibbs_out$tau2_hist)
 	# multiESS(par_vws_mcmc)
 
-	i = which.min(ess_sigma2)
-	plot(gibbs_out$sigma2_hist[,i], type = "l")
-
-	z_geweke = geweke(gibbs_out$sigma2_hist)
-	plot(density(z_geweke))
-	curve(dnorm, add = TRUE, lty = 2)
-	sum(abs(z_geweke) > 4)
-	sum(z_geweke < -3.5)
+	# i = which.min(ess_sigma2)
+	# plot(gibbs_out$sigma2_hist[,i], type = "l")
 
 	g = plot_tunes(gibbs_out$sigma2_tunes_hist, burn = 500, tol = 0.05)
 	ff = sprintf("tunes-vws1-%d.pdf", l)
@@ -275,8 +244,8 @@ for (l in seq_len(nrow(tol_levels)))
 
 	ess_sigma2 = ess(gibbs_out$sigma2_hist)
 
-	i = which.min(ess_sigma2)
-	plot(gibbs_out$sigma2_hist[,i], type = "l")
+	# i = which.min(ess_sigma2)
+	# plot(gibbs_out$sigma2_hist[,i], type = "l")
 
 	g = plot_tunes(gibbs_out$sigma2_tunes_hist[1:tune], burn = 0, tol = 1.00)
 	ff = sprintf("tunes-vws2-%d.pdf", l)
@@ -306,7 +275,7 @@ for (l in seq_len(nrow(tol_levels)))
 
 # ----- VWS3 within Gibbs -----
 # Stop tuning after an initial period, then use proposal with MH algorithm
-# instead of rejection sampling. It may be interesting that this does not work
+# instead of rejection sampling. Seems interesting that this does not work
 # as well: it doesn't run much faster than version 2 and some of the sigma2
 # chains aren't mixing that well.
 
@@ -333,7 +302,6 @@ inner_ctrl = control_inner(method = "imh")
 control = control_joint(R = 3000, burn = 1000, thin = 1,
 	report = 1000, inner = inner_ctrl, save_latent = seq_len(m))
 fixed_fh = fixed_joint(gamma = TRUE, tau2 = TRUE, sigma2 = TRUE)
-
 fh_out = gibbs_joint(y, s2, X, Z, df, init, control, fixed_fh)
 print(fh_out)
 
@@ -351,9 +319,9 @@ if (run_vws0)
 	print(vws0_out)
 
 	ess_sigma2 = ess(vws0_out$sigma2_hist)
-	ess_theta = ess(vws0_out$theta_hist)
-	quantile(ess_sigma2, probs)
-	quantile(ess_theta, probs)
+	# ess_theta = ess(vws0_out$theta_hist)
+	# quantile(ess_sigma2, probs)
+	# quantile(ess_theta, probs)
 
 	g = plot_rejects(vws0_out$sigma2_rejects_hist, burn = 0, tol = 1.0)
 	ff = sprintf("rejects-vws0-%d.pdf", l)
@@ -371,7 +339,9 @@ if (run_vws0)
 	)
 }
 
-# ----- Create some plots from the results -----
+save.image("results.Rdata")
+
+# ----- Plots from the results -----
 
 # Dot plot of joint sampling variances versus estimated
 g = data.frame(s2 = s2, joint = apply(vws1_out[[1]]$sigma2_hist, 2, mean)) %>%
@@ -591,6 +561,8 @@ ggsave("sigma2-width-imh-vs-vws.pdf", g, width = 3.5, height = 3.5, unit="in")
 #	theme_light()
 # ggsave("region-updates-log10.pdf", g, width = 5, height = 3)
 
+# ----- Tables to summarize MCMC results -----
+
 # Table for main manuscript
 tbl_ess %>%
 	mutate(tol_merge = format(tol_merge, scientific = TRUE)) %>%
@@ -614,8 +586,6 @@ tbl_ess %>%
 # Summaries of the regression parameters
 xtable(summary(imh_out), digits=3)
 xtable(summary(vws1_out[[1]]), digits=3)
-
-save.image("results.Rdata")
 
 # ----- Experimental: Gelman-Rubin Diagnostic -----
 # Run three additional chains with IMH and then diagnose the four together.
@@ -648,4 +618,20 @@ mcmc_list = mcmc.list(
 	as.mcmc(vws1_out[[4]]$sigma2_hist[,lowest_imh])
 )
 gr_vws = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
+
+
+# ----- Experimental: Geweke Diagnostic -----
+# TBD: Geweke diagnostic seems about to detect the worst mixing chains. But how
+# to summarize it in a table for results?
+
+z_geweke = geweke(imh_out$sigma2_hist)
+pval = pnorm(2 * abs(z_geweke), lower.tail = FALSE)
+idx = order(pval)[1:6]
+pval[idx]
+plot(imh_out$sigma2_hist[,idx[6]], type = "l")
+
+plot(density(z_geweke))
+curve(dnorm, add = TRUE, lty = 2)
+sum(abs(z_geweke) > 4)
+sum(z_geweke < -3.5)
 
