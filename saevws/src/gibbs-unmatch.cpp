@@ -188,7 +188,7 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 						points.size(),
 						100,      // max_points
 						true,     // use metropolis or not
-						mu(i) // previous value
+						mu(i)     // previous value
 					);
 					double mu_i = mu_dist(rng);
 					bool is_reject = std::fabs(mu_i - mu(i)) < 1e-8;

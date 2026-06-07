@@ -46,7 +46,6 @@ ess_mu[is.na(ess_mu)] = 0
 
 # i = which.min(ess_mu)
 # plot(imh_out$mu_hist[,i], type = "l")
-# abline(h = mu_true[i], lty = 2, col = "red")
 
 tbl_ess = tibble(
 	method = "IMH",
@@ -76,7 +75,6 @@ ess_mu = ess(amh_out$mu_hist)
 
 # i = which.min(ess_mu)
 # plot(amh_out$mu_hist[,i], type = "l")
-# abline(h = mu_true[i], lty = 2, col = "red")
 
 tbl_ess = tbl_ess %>% add_row(
 	method = "AMH",
@@ -106,7 +104,6 @@ ess_mu = ess(arms_out$mu_hist)
 
 # i = which.min(ess_mu)
 # plot(arms_out$mu_hist[,i], type = "l")
-# abline(h = mu_true[i], lty = 2, col = "red")
 
 tbl_ess = tbl_ess %>% add_row(
 	method = "ARMS",
@@ -139,7 +136,6 @@ ggsave("rejects-vws0.pdf", g, width = 3, height = 2)
 
 # i = which.min(ess_mu)
 # plot(vws0_out$mu_hist[,i], type = "l")
-# abline(h = mu_true[i], lty = 2, col = "red")
 
 tbl_ess = tbl_ess %>% add_row(
 	method = "VWS0",
@@ -177,7 +173,6 @@ for (l in seq_len(nrow(tol_levels)))
 
 	# i = which.min(ess_mu)
 	# plot(gibbs_out$mu_hist[,i], type = "l")
-	# abline(h = mu_true[i], lty = 2, col = "red")
 
 	g = plot_tunes(gibbs_out$mu_tunes_hist, burn = 500, tol = 0.05)
 	ff = sprintf("tunes-vws1-%d.pdf", l)
@@ -226,7 +221,6 @@ for (l in seq_len(nrow(tol_levels)))
 
 	# i = which.min(ess_mu)
 	# plot(gibbs_out$mu_hist[,i], type = "l")
-	# abline(h = mu_true[i], lty = 2, col = "red")
 
 	tbl_ess = tbl_ess %>% add_row(
 		method = "VWS2",
@@ -340,7 +334,7 @@ for (l in 1:nrow(tol_levels)) {
 	ggsave(ff, g, width = 3, height = 2)
 }
 
-# ----- Tables to summarize MCMC results -----
+# ----- Tables -----
 tbl_ess %>%
 	mutate(tol_merge = format(tol_merge, scientific = FALSE)) %>%
 	mutate(ess1_sec = format(ess1 / elapsed, digits = 2, big.mark = ",")) %>%
