@@ -1,6 +1,6 @@
 Package: saevws
 Title: Self-Tuned VWS within Gibbs for You (2021) Model
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: c(
     person("Andrew", "Raim", , "andrew.raim@gmail.com", role = c("aut", "cre")),
     person("Kyle", "Irimata", , "k.irimata90@gmail.com", role = c("aut")),

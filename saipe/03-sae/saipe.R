@@ -386,18 +386,23 @@ df_plot = data.frame(
 		amh = ess(amh_out$sigma2_hist),
 		vws = ess(vws1_out[[4]]$sigma2_hist)) %>%
 	mutate(iter = row_number())
-df_quantiles = data.frame(probs = c(0.20, 0.40, 0.60, 0.80)) %>%
-	mutate(imh = quantile(df_plot$imh, probs, na.rm = TRUE)) %>%
-	mutate(arms = quantile(df_plot$arms, probs, na.rm = TRUE)) %>%
-	mutate(amh = quantile(df_plot$amh, probs, na.rm = TRUE)) %>%
-	mutate(vws = quantile(df_plot$vws, probs, na.rm = TRUE))
+# df_quantiles = data.frame(probs = c(0.20, 0.40, 0.60, 0.80)) %>%
+#	mutate(imh = quantile(df_plot$imh, probs, na.rm = TRUE)) %>%
+#	mutate(arms = quantile(df_plot$arms, probs, na.rm = TRUE)) %>%
+#	mutate(amh = quantile(df_plot$amh, probs, na.rm = TRUE)) %>%
+#	mutate(vws = quantile(df_plot$vws, probs, na.rm = TRUE))
+df_points = data.frame(x = c(500, 1000, 1500)) %>%
+	mutate(imh = ecdf(df_plot$imh)(x)) %>%
+	mutate(arms = ecdf(df_plot$arms)(x)) %>%
+	mutate(amh = ecdf(df_plot$amh)(x)) %>%
+	mutate(vws = ecdf(df_plot$vws)(x))
 g = pivot_longer(df_plot, cols = c("imh", "arms", "amh", "vws")) %>%
 	ggplot() +
 	stat_ecdf(aes(x = value, group = name)) +
-	geom_point(data = df_quantiles, aes(imh, probs), pch = 16, cex = 3) +
-	geom_point(data = df_quantiles, aes(amh, probs), pch = 17, cex = 3) +
-	# geom_point(data = df_quantiles, aes(arms, probs), pch = 18, cex = 3) +
-	# geom_point(data = df_quantiles, aes(vws, probs), pch = 19, cex = 3) +
+	geom_point(data = df_points, aes(x, imh), pch = 16, cex = 3) +
+	geom_point(data = df_points, aes(x, amh), pch = 17, cex = 3) +
+	geom_point(data = df_points, aes(x, arms), pch = 18, cex = 3) +
+	geom_point(data = df_points, aes(x, vws), pch = 15, cex = 3) +
 	scale_x_continuous(expand = expansion(0,0)) +
 	xlab("ESS") +
 	ylab("Empirical CDF") +
