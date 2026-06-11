@@ -38,9 +38,9 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	double tol_merge = inner_ctrl["tol_merge"];
 	unsigned int N = inner_ctrl["N"];
 	unsigned int tune = inner_ctrl["tune"];
-	double am_varprop_init = inner_ctrl["am_varprop_init"];
-	double am_varprop_c = inner_ctrl["am_varprop_c"];
-	double am_varprop_eps = inner_ctrl["am_varprop_eps"];
+	double amh_varprop_init = inner_ctrl["amh_varprop_init"];
+	double amh_varprop_c = inner_ctrl["amh_varprop_c"];
+	double amh_varprop_eps = inner_ctrl["amh_varprop_eps"];
 
 	unsigned int rep_keep = 0;
 	unsigned int R_keep = std::ceil((R - burn) / double(thin));
@@ -93,19 +93,19 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	}
 
 	// This block is only used if inner_method == "arms"
-	std::mt19937_64 rng(static_cast<uint_fast64_t>(UINT_FAST64_MAX * R::unif_rand()));
+	std::mt19937_64 rng(static_cast<uint_fast64_t>(double(UINT_FAST64_MAX) * R::unif_rand()));
 	arma::mat arms_quantiles(m, 3);
 	arms_quantiles.col(0).fill(0.1);
 	arms_quantiles.col(1).fill(1);
 	arms_quantiles.col(2).fill(5);
 
 	// This block is only used if inner_method == "amh"
-	arma::vec sigma2_mean(m);
-	arma::vec sigma2_g(m);
-	arma::vec sigma2_varprop(m);
-	sigma2_mean.fill(0);
-	sigma2_g.fill(0);
-	sigma2_varprop.fill(am_varprop_init);
+	arma::vec zeta_mean(m);
+	arma::vec zeta_g(m);
+	arma::vec zeta_var_prop(m);
+	zeta_mean.fill(0);
+	zeta_g.fill(0);
+	zeta_var_prop.fill(amh_varprop_init);
 
 	// Set up fixed parameters
 	stopifnot(fixed.inherits("fixed_joint"), "fixed inherits from fixed_joint");
@@ -217,7 +217,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 					double sigma2_prev = sigma2(i);
 					double u = R::runif(0, 1);
 					double phi = std::log(sigma2_prev);
-					double phi_prop = R::rnorm(phi, std::sqrt(sigma2_varprop(i)));
+					double phi_prop = R::rnorm(phi, std::sqrt(zeta_var_prop(i)));
 					double sigma2_prop = std::exp(phi_prop);
 					double log_num = R::dlnorm(sigma2_prop, Zgamma(i), std::sqrt(tau2), true) +
 						d_invgamma(sigma2_prop, kappa(i), lambda(i), true) +
@@ -235,22 +235,23 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 
 					// Adapt the proposal distribution
 					double t = rep;
-					double sigma2_mean_prev = sigma2_mean(i);
-					sigma2_mean(i) = (t * sigma2_mean(i) + sigma2(i)) / (t + 1);
+					double zeta_cur = std::log(sigma2(i));
+					double zeta_mean_prev = zeta_mean(i);
+					zeta_mean(i) = (t * zeta_mean(i) + zeta_cur) / (t + 1);
 
 					if (t == 0) {
-						sigma2_g(i) = std::pow(sigma2(i), 2) / (t + 1);
+						zeta_g(i) = std::pow(zeta_cur, 2) / (t + 1);
 					} else  {
-						sigma2_g(i) = (t - 1) / t * sigma2_g(i) +
-							std::pow(sigma2_mean_prev, 2) +
-							std::pow(sigma2(i), 2) / t -
-							(t + 1) / t * std::pow(sigma2_mean(i), 2);
+						zeta_g(i) = (t - 1) / t * zeta_g(i) +
+							std::pow(zeta_mean_prev, 2) +
+							std::pow(zeta_cur, 2) / t -
+							(t + 1) / t * std::pow(zeta_mean(i), 2);
 					}
 
 					if (rep < 10) {
-						sigma2_varprop(i) = am_varprop_init;
+						zeta_var_prop(i) = amh_varprop_init;
 					} else if (rep < tune) {
-						sigma2_varprop(i) = std::pow(am_varprop_c, 2)  * (sigma2_g(i) + am_varprop_eps);
+						zeta_var_prop(i) = std::pow(amh_varprop_c, 2)  * (zeta_g(i) + amh_varprop_eps);
 					}
 				}
 			} else if (strcmp(inner_method.get_cstring(), "arms") == 0) {

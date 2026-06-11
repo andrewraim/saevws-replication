@@ -9,9 +9,9 @@
 #' \eqn{\sigma_i^2} draws, Adaptive Rejection Metropolis Sampling (`"arms"`),
 #' or Adaptive Metropolis (`"am"`).
 #' @param N Maximum number of refinements for VWS without self-tuning.
-#' @param am_varprop_init TBD
-#' @param am_varprop_c TBD
-#' @param am_varprop_eps TBD
+#' @param amh_varprop_init TBD
+#' @param amh_varprop_c TBD
+#' @param amh_varprop_eps TBD
 #' @param tune TBD
 #'
 #' @return A list with results.
@@ -23,14 +23,14 @@
 control_inner = function(tol_suff = 1e-2, tol_merge = exp(-100),
 	max_rejects = 1e6,
 	method = c("vws-tune", "vws-basic", "imh", "arms", "amh", "mh-vws"),
-	N = 50, tune = 1e6, am_varprop_init = 25,
-	am_varprop_c = 2.4, am_varprop_eps = 0.05)
+	N = 50, tune = 1e6, amh_varprop_init = 25,
+	amh_varprop_c = 2.4, amh_varprop_eps = 0.05)
 {
 	ret = list(tol_suff = tol_suff, tol_merge = tol_merge,
 		max_rejects = max_rejects, method = match.arg(method), N = N,
 		tune = tune,
-		am_varprop_init = am_varprop_init, am_varprop_c = am_varprop_c,
-		am_varprop_eps = am_varprop_eps)
+		amh_varprop_init = amh_varprop_init, amh_varprop_c = amh_varprop_c,
+		amh_varprop_eps = amh_varprop_eps)
 	class(ret) = "control_inner"
 	return(ret)
 }

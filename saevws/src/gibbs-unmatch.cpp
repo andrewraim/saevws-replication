@@ -31,9 +31,9 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	double tol_merge = inner_ctrl["tol_merge"];
 	unsigned int N = inner_ctrl["N"];
 	unsigned int tune = inner_ctrl["tune"];
-	double am_varprop_init = inner_ctrl["am_varprop_init"];
-	double am_varprop_c = inner_ctrl["am_varprop_c"];
-	double am_varprop_eps = inner_ctrl["am_varprop_eps"];
+	double amh_varprop_init = inner_ctrl["amh_varprop_init"];
+	double amh_varprop_c = inner_ctrl["amh_varprop_c"];
+	double amh_varprop_eps = inner_ctrl["amh_varprop_eps"];
 
 	unsigned int rep_keep = 0;
 	unsigned int R_keep = std::ceil((R - burn) / double(thin));
@@ -89,7 +89,7 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	arma::vec mu_varprop(m);
 	mu_mean.fill(0);
 	mu_g.fill(0);
-	mu_varprop.fill(am_varprop_init);
+	mu_varprop.fill(amh_varprop_init);
 
 	// Set up fixed parameters
 	stopifnot(fixed.inherits("fixed_unmatch"), "fixed inherits from fixed_unmatch");
@@ -164,9 +164,9 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 					}
 
 					if (rep < 10) {
-						mu_varprop(i) = am_varprop_init;
+						mu_varprop(i) = amh_varprop_init;
 					} else if (rep < tune) {
-						mu_varprop(i) = std::pow(am_varprop_c, 2)  * (mu_g(i) + am_varprop_eps);
+						mu_varprop(i) = std::pow(amh_varprop_c, 2)  * (mu_g(i) + amh_varprop_eps);
 					}
 				}
 			} else if (strcmp(inner_method.get_cstring(), "arms") == 0) {

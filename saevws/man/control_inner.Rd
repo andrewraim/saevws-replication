@@ -11,9 +11,9 @@ control_inner(
   method = c("vws-tune", "vws-basic", "imh", "arms", "amh", "mh-vws"),
   N = 50,
   tune = 1e+06,
-  am_varprop_init = 25,
-  am_varprop_c = 2.4,
-  am_varprop_eps = 0.05
+  amh_varprop_init = 25,
+  amh_varprop_c = 2.4,
+  amh_varprop_eps = 0.05
 )
 }
 \arguments{
@@ -33,11 +33,11 @@ or Adaptive Metropolis (\code{"am"}).}
 
 \item{tune}{TBD}
 
-\item{am_varprop_init}{TBD}
+\item{amh_varprop_init}{TBD}
 
-\item{am_varprop_c}{TBD}
+\item{amh_varprop_c}{TBD}
 
-\item{am_varprop_eps}{TBD}
+\item{amh_varprop_eps}{TBD}
 }
 \value{
 A list with results.
