@@ -99,7 +99,7 @@ tbl_ess = tibble(
 )
 
 # ----- AMH within Gibbs -----
-inner_ctrl = control_inner(method = "amh", am_varprop_init = 1)
+inner_ctrl = control_inner(method = "amh", amh_varprop_init = 1)
 control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1000,
 	inner = inner_ctrl, save_latent = seq_len(m))
 amh_out = gibbs_joint(y, s2, X, Z, df, init, control)
@@ -325,7 +325,7 @@ save.image("results.Rdata")
 # ----- Additional Plots -----
 
 # Dot plot of joint sampling variances versus estimated
-g = data.frame(s2 = s2, joint = apply(vws1_out[[4]]$sigma2_hist, 2, mean)) %>%
+g = data.frame(s2 = s2, joint = apply(vws2_out[[4]]$sigma2_hist, 2, mean)) %>%
 	ggplot() +
 	geom_point(aes(s2, joint)) +
 	geom_abline(slope = 1, lty = 2, col = "red") +
@@ -336,8 +336,8 @@ ggsave("variance-model-vs-estimated.pdf", g, width = 4, height = 4, unit="in")
 
 # Model uncertainty in sigma2 versus area sample size
 g = data.frame(df = saipe$df, log_n = log(saipe$hu_sampled), s2 = s2,
-		lo = apply(vws1_out[[4]]$sigma2_hist, 2, quantile, probs = alpha/2),
-		hi = apply(vws1_out[[4]]$sigma2_hist, 2, quantile, probs = 1-alpha/2)) %>%
+		lo = apply(vws2_out[[4]]$sigma2_hist, 2, quantile, probs = alpha/2),
+		hi = apply(vws2_out[[4]]$sigma2_hist, 2, quantile, probs = 1-alpha/2)) %>%
 	mutate(width = hi - lo) %>%
 	ggplot() +
 	geom_point(aes(x = log_n, y = width)) +
@@ -350,8 +350,8 @@ ggsave("variance-ci-width.pdf", g, width = 4, height = 4)
 # area sample size.
 g = data.frame(
 		log_n = log(saipe$hu_sampled),
-		vws_lo = apply(vws1_out[[4]]$theta_hist, 2, quantile, probs = alpha/2),
-		vws_hi = apply(vws1_out[[4]]$theta_hist, 2, quantile, probs = 1-alpha/2),
+		vws_lo = apply(vws2_out[[4]]$theta_hist, 2, quantile, probs = alpha/2),
+		vws_hi = apply(vws2_out[[4]]$theta_hist, 2, quantile, probs = 1-alpha/2),
 		fh_lo = apply(fh_out$theta_hist, 2, quantile, probs = alpha/2),
 		fh_hi = apply(fh_out$theta_hist, 2, quantile, probs = 1-alpha/2)) %>%
 	mutate(vws_width = vws_hi - vws_lo) %>%
@@ -371,7 +371,7 @@ ggsave("theta-ci-ratio.pdf", g, width = 5, height = 5)
 # Overlay histograms of the ESS for sigma2
 # g = data.frame(
 #		imh = ess(imh_out$sigma2_hist),
-#		vws = ess(vws1_out[[4]]$sigma2_hist)) %>%
+#		vws = ess(vws2_out[[4]]$sigma2_hist)) %>%
 #	ggplot() +
 #	geom_histogram(aes(x = imh), col = "black", fill = "white", bins = 30, alpha = 0.4) +
 #	geom_histogram(aes(x = vws),  col = "black", fill = "red2", bins = 30, alpha = 0.4) +
@@ -384,7 +384,7 @@ df_plot = data.frame(
 		imh = ess(imh_out$sigma2_hist),
 		arms = ess(arms_out$sigma2_hist),
 		amh = ess(amh_out$sigma2_hist),
-		vws = ess(vws1_out[[4]]$sigma2_hist)) %>%
+		vws = ess(vws2_out[[4]]$sigma2_hist)) %>%
 	mutate(iter = row_number())
 # df_quantiles = data.frame(probs = c(0.20, 0.40, 0.60, 0.80)) %>%
 #	mutate(imh = quantile(df_plot$imh, probs, na.rm = TRUE)) %>%
@@ -414,7 +414,7 @@ ggsave("sigma2-ess-ecdf.pdf", g, width = 4, height = 3)
 # and 3 counties with worst VWS chains
 ess_imh = ess(imh_out$sigma2_hist)
 ess_imh[is.na(ess_imh)] = 0
-ess_vws = ess(vws1_out[[4]]$sigma2_hist)
+ess_vws = ess(vws2_out[[4]]$sigma2_hist)
 lowest_imh = order(ess_imh)[1:3]
 lowest_vws = order(ess_vws)[1:3]
 plot_ess = c(lowest_imh, lowest_vws)
@@ -427,7 +427,7 @@ for (ii in 1:length(plot_ess)) {
 
 	g = data.frame(
 			imh = imh_out$sigma2_hist[,idx],
-			vws = vws1_out[[4]]$sigma2_hist[,idx]) %>%
+			vws = vws2_out[[4]]$sigma2_hist[,idx]) %>%
 		mutate(x = row_number()) %>%
 		ggplot() +
 		geom_line(aes(x=x, y=vws), color = "red2", alpha = 0.4) +
@@ -476,11 +476,11 @@ print(saipe[lowest_arms,])
 # Plot of estimates of sigma_i^2 for VWS vs IMH with interval widths
 
 sigma2_imh = apply(imh_out$sigma2_hist, 2, mean)
-sigma2_vws = apply(vws1_out[[4]]$sigma2_hist, 2, mean)
+sigma2_vws = apply(vws2_out[[4]]$sigma2_hist, 2, mean)
 sigma2_sd_imh = apply(imh_out$sigma2_hist, 2, sd)
-sigma2_sd_vws = apply(vws1_out[[4]]$sigma2_hist, 2, sd)
+sigma2_sd_vws = apply(vws2_out[[4]]$sigma2_hist, 2, sd)
 sigma2_ci_imh = apply(imh_out$sigma2_hist, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
-sigma2_ci_vws = apply(vws1_out[[4]]$sigma2_hist, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
+sigma2_ci_vws = apply(vws2_out[[4]]$sigma2_hist, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
 sigma2_width_imh = apply(sigma2_ci_imh, 1, diff)
 sigma2_width_vws = apply(sigma2_ci_vws, 1, diff)
 ess_imh_sigma2 = ess(imh_out$sigma2_hist)
@@ -576,7 +576,7 @@ tbl_ess %>%
 
 # Summaries of the regression parameters
 xtable(summary(imh_out), digits = 4)
-xtable(summary(vws1_out[[4]]), digits = 4)
+xtable(summary(vws2_out[[4]]), digits = 4)
 
 s_imh = summary(imh_out)
 s_amh = summary(arms_out)
@@ -642,10 +642,10 @@ gr_imh = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
 # sampler.
 
 mcmc_list = mcmc.list(
-	as.mcmc(vws1_out[[1]]$sigma2_hist[,lowest_imh]),
-	as.mcmc(vws1_out[[2]]$sigma2_hist[,lowest_imh]),
-	as.mcmc(vws1_out[[3]]$sigma2_hist[,lowest_imh]),
-	as.mcmc(vws1_out[[4]]$sigma2_hist[,lowest_imh])
+	as.mcmc(vws2_out[[1]]$sigma2_hist[,lowest_imh]),
+	as.mcmc(vws2_out[[2]]$sigma2_hist[,lowest_imh]),
+	as.mcmc(vws2_out[[3]]$sigma2_hist[,lowest_imh]),
+	as.mcmc(vws2_out[[4]]$sigma2_hist[,lowest_imh])
 )
 gr_vws = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
 

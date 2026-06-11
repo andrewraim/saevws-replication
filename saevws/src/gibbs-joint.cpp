@@ -119,6 +119,7 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	double elapsed_tau2 = 0;
 	double elapsed_sigma2 = 0;
 	double elapsed_theta = 0;
+	double elapsed_sigma2_proposal = 0;
 
 	for (unsigned int rep = 0; rep < R; rep++)
 	{
@@ -191,11 +192,16 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 				*/
 
 				for (unsigned int i = 0; i < m; i++) {
-					double u = R::runif(0, 1);
+					auto st = std::chrono::high_resolution_clock::now();
 					double sigma2_prop = r_invgamma(kappa(i), lambda(i));
+					auto et = std::chrono::high_resolution_clock::now();
+					auto td = std::chrono::duration_cast<std::chrono::microseconds>(et - st);
+					elapsed_sigma2_proposal += td.count() * SEC_PER_MICROSEC;
+
+					double u = R::runif(0, 1);
 					double log_num = R::dlnorm(sigma2_prop, Zgamma(i), std::sqrt(tau2), true);
 					double log_den = R::dlnorm(sigma2(i), Zgamma(i), std::sqrt(tau2), true);
-					const double log_ratio = std::min(log_num - log_den, 0.0);
+					double log_ratio = std::min(log_num - log_den, 0.0);
 					if (std::log(u) < log_ratio) {
 						sigma2(i) = sigma2_prop;
 					} else {
@@ -217,7 +223,13 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 					double sigma2_prev = sigma2(i);
 					double u = R::runif(0, 1);
 					double phi = std::log(sigma2_prev);
+
+					auto st = std::chrono::high_resolution_clock::now();
 					double phi_prop = R::rnorm(phi, std::sqrt(zeta_var_prop(i)));
+					auto et = std::chrono::high_resolution_clock::now();
+					auto td = std::chrono::duration_cast<std::chrono::microseconds>(et - st);
+					elapsed_sigma2_proposal += td.count() * SEC_PER_MICROSEC;
+
 					double sigma2_prop = std::exp(phi_prop);
 					double log_num = R::dlnorm(sigma2_prop, Zgamma(i), std::sqrt(tau2), true) +
 						d_invgamma(sigma2_prop, kappa(i), lambda(i), true) +
@@ -410,7 +422,8 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 		Rcpp::Named("phi2") = elapsed_phi2,
 		Rcpp::Named("tau2") = elapsed_tau2,
 		Rcpp::Named("sigma2") = elapsed_sigma2,
-		Rcpp::Named("theta") = elapsed_theta
+		Rcpp::Named("theta") = elapsed_theta,
+		Rcpp::Named("sigma2_proposal") = elapsed_sigma2_proposal
 	);
 
 	return Rcpp::List::create(

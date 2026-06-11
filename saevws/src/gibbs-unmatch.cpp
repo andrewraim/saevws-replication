@@ -100,6 +100,7 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	double elapsed_beta = 0;
 	double elapsed_tau2 = 0;
 	double elapsed_mu = 0;
+	double elapsed_mu_proposal = 0;
 
 	for (unsigned int rep = 0; rep < R; rep++)
 	{
@@ -112,20 +113,24 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				* Independent Metropolis sampling step from You & Rao (2002)
 				*/
 
-				const arma::vec& u = arma::randu(m);
-				arma::vec mu_prop(m);
-				arma::vec log_num(m);
-				arma::vec log_den(m);
 				for (unsigned int i = 0; i < m; i++) {
-					mu_prop(i) = R::rlnorm(Xbeta(i), std::sqrt(tau2));
-					log_num(i) = R::dnorm(mu_prop(i), y(i), sigma(i), true);
-					log_den(i) = R::dnorm(mu(i), y(i), sigma(i), true);
+					auto st = std::chrono::high_resolution_clock::now();
+					double mu_prop = R::rlnorm(Xbeta(i), std::sqrt(tau2));
+					auto et = std::chrono::high_resolution_clock::now();
+					auto td = std::chrono::duration_cast<std::chrono::microseconds>(et - st);
+					elapsed_mu_proposal += td.count() * SEC_PER_MICROSEC;
+
+					double u = R::runif(0, 1);
+					double log_num = R::dnorm(mu_prop, y(i), sigma(i), true);
+					double log_den = R::dnorm(mu(i), y(i), sigma(i), true);
+					const double log_ratio = std::min(log_num - log_den, 0.0);
+					if (std::log(u) < log_ratio) {
+						mu(i) = mu_prop;
+					} else {
+						mu_rejects_hist(rep)++;
+						mu_rejects_areas(i)++;
+					}
 				}
-				const arma::vec& log_ratio = arma::min(log_num - log_den, arma::zeros(m));
-				const arma::uvec& idx = arma::find(arma::log(u) < log_ratio);
-				mu(idx) = mu_prop.elem(idx);
-				mu_rejects_hist(rep) = m - idx.n_elem;
-				mu_rejects_areas += (arma::log(u) >= log_ratio);
 			} else if (strcmp(inner_method.get_cstring(), "amh") == 0) {
 				/*
 				* Adaptive Metropolis-Hastings (AMH) sampling from Haario,
@@ -135,8 +140,13 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				for (unsigned int i = 0; i < m; i++) {
 					// Draw a candidate and decide whether to accept it
 					double mu_prev = mu(i);
-					double u = R::runif(0, 1);
+					auto st = std::chrono::high_resolution_clock::now();
 					double mu_prop = R::rnorm(mu_prev, std::sqrt(mu_varprop(i)));
+					auto et = std::chrono::high_resolution_clock::now();
+					auto td = std::chrono::duration_cast<std::chrono::microseconds>(et - st);
+					elapsed_mu_proposal += td.count() * SEC_PER_MICROSEC;
+
+					double u = R::runif(0, 1);
 					double log_num = R::dlnorm(mu_prop, Xbeta(i), std::sqrt(tau2), true) +
 						R::dnorm(mu_prop, y(i), sigma(i), true);
 					double log_den = R::dlnorm(mu_prev, Xbeta(i), std::sqrt(tau2), true) +
@@ -312,7 +322,8 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	Rcpp::List elapsed = Rcpp::List::create(
 		Rcpp::Named("beta") = elapsed_beta,
 		Rcpp::Named("tau2") = elapsed_tau2,
-		Rcpp::Named("mu") = elapsed_mu
+		Rcpp::Named("mu") = elapsed_mu,
+		Rcpp::Named("mu_proposal") = elapsed_mu_proposal
 	);
 
 	return Rcpp::List::create(
