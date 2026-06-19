@@ -579,7 +579,7 @@ xtable(summary(imh_out), digits = 4)
 xtable(summary(vws2_out[[4]]), digits = 4)
 
 s_imh = summary(imh_out)
-s_amh = summary(arms_out)
+s_amh = summary(amh_out)
 s_arms = summary(arms_out)
 s_vws0 = summary(vws0_out)
 s_vws1_1 = summary(vws1_out[[1]])

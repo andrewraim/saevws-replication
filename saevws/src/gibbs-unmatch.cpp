@@ -100,7 +100,6 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	double elapsed_beta = 0;
 	double elapsed_tau2 = 0;
 	double elapsed_mu = 0;
-	double elapsed_mu_proposal = 0;
 
 	for (unsigned int rep = 0; rep < R; rep++)
 	{
@@ -114,11 +113,7 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				*/
 
 				for (unsigned int i = 0; i < m; i++) {
-					auto st = std::chrono::high_resolution_clock::now();
 					double mu_prop = R::rlnorm(Xbeta(i), std::sqrt(tau2));
-					auto et = std::chrono::high_resolution_clock::now();
-					auto td = std::chrono::duration_cast<std::chrono::microseconds>(et - st);
-					elapsed_mu_proposal += td.count() * SEC_PER_MICROSEC;
 
 					double u = R::runif(0, 1);
 					double log_num = R::dnorm(mu_prop, y(i), sigma(i), true);
@@ -140,11 +135,7 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				for (unsigned int i = 0; i < m; i++) {
 					// Draw a candidate and decide whether to accept it
 					double mu_prev = mu(i);
-					auto st = std::chrono::high_resolution_clock::now();
 					double mu_prop = R::rnorm(mu_prev, std::sqrt(mu_varprop(i)));
-					auto et = std::chrono::high_resolution_clock::now();
-					auto td = std::chrono::duration_cast<std::chrono::microseconds>(et - st);
-					elapsed_mu_proposal += td.count() * SEC_PER_MICROSEC;
 
 					double u = R::runif(0, 1);
 					double log_num = R::dlnorm(mu_prop, Xbeta(i), std::sqrt(tau2), true) +
@@ -322,8 +313,7 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	Rcpp::List elapsed = Rcpp::List::create(
 		Rcpp::Named("beta") = elapsed_beta,
 		Rcpp::Named("tau2") = elapsed_tau2,
-		Rcpp::Named("mu") = elapsed_mu,
-		Rcpp::Named("mu_proposal") = elapsed_mu_proposal
+		Rcpp::Named("mu") = elapsed_mu
 	);
 
 	return Rcpp::List::create(
