@@ -21,18 +21,18 @@ control = control_unmatch(R = 30000, burn = 20000, thin = 1, report = 5000,
 gibbs_imh = gibbs_unmatch(y, sigma, X, init, control)
 print(gibbs_imh)
 
-plot(gibbs_imh$beta_hist[,1], type = "l")
-plot(gibbs_imh$beta_hist[,2], type = "l")
-plot(gibbs_imh$tau2_hist, type = "l")
+plot(gibbs_imh$beta[,1], type = "l")
+plot(gibbs_imh$beta[,2], type = "l")
+plot(gibbs_imh$tau2, type = "l")
 
-ess_imh = ess(gibbs_imh$mu_hist)
+ess_imh = ess(gibbs_imh$mu)
 hist(ess_imh)
 
 i = which.min(ess_imh)
-plot(gibbs_imh$mu_hist[,i], type = "l")
+plot(gibbs_imh$mu[,i], type = "l")
 abline(h = mu_true[i], lty = 2, col = "red")
 
-mu_hat = apply(gibbs_imh$mu_hist, 2, mean)
+mu_hat = apply(gibbs_imh$mu, 2, mean)
 cv_hat = sigma / mu_hat
 df %>% add_column(mu_hat, cv_hat)
 
@@ -46,18 +46,18 @@ control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
 gibbs_vwst = gibbs_unmatch(y, sigma, X, init, control)
 print(gibbs_vwst)
 
-plot(gibbs_vwst$beta_hist[,1], type = "l")
-plot(gibbs_vwst$beta_hist[,2], type = "l")
-plot(gibbs_vwst$tau2_hist, type = "l")
+plot(gibbs_vwst$beta[,1], type = "l")
+plot(gibbs_vwst$beta[,2], type = "l")
+plot(gibbs_vwst$tau2, type = "l")
 
-ess_vwst = ess(gibbs_vwst$mu_hist)
+ess_vwst = ess(gibbs_vwst$mu)
 hist(ess_vwst)
 
 i = which.min(ess_vwst)
-plot(gibbs_vwst$mu_hist[,i], type = "l")
+plot(gibbs_vwst$mu[,i], type = "l")
 abline(h = mu_true[i], lty = 2, col = "red")
 
-mu_hat = apply(gibbs_vwst$mu_hist, 2, mean)
+mu_hat = apply(gibbs_vwst$mu, 2, mean)
 cv_hat = sigma / mu_hat
 df %>% add_column(mu_hat, cv_hat)
 

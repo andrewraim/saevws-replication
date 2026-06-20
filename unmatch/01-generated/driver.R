@@ -5,8 +5,6 @@ library(xtable)
 library(coda)
 library(knitr)
 
-source("../../saipe/shared/functions.R", chdir = TRUE)
-
 set.seed(1234)
 
 # Quantiles for ESS
