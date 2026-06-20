@@ -384,23 +384,23 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	);
 
 	return Rcpp::List::create(
-		Rcpp::Named("beta_hist") = beta_hist,
-		Rcpp::Named("gamma_hist") = gamma_hist,
-		Rcpp::Named("phi2_hist") = phi2_hist,
-		Rcpp::Named("tau2_hist") = tau2_hist,
-		Rcpp::Named("sigma2_hist") = sigma2_hist,
-		Rcpp::Named("theta_hist") = theta_hist,
+		Rcpp::Named("beta") = beta_hist,
+		Rcpp::Named("gamma") = gamma_hist,
+		Rcpp::Named("phi2") = phi2_hist,
+		Rcpp::Named("tau2") = tau2_hist,
+		Rcpp::Named("sigma2") = sigma2_hist,
+		Rcpp::Named("theta") = theta_hist,
 		Rcpp::Named("R_keep") = R_keep,
 		Rcpp::Named("elapsed") = elapsed,
 		Rcpp::Named("R") = R,
 		Rcpp::Named("burn") = burn,
 		Rcpp::Named("thin") = thin,
 		Rcpp::Named("inner_method") = inner_method,
-		Rcpp::Named("sigma2_rejects_hist") = sigma2_rejects_hist,
+		Rcpp::Named("sigma2_rejects") = sigma2_rejects_hist,
 		Rcpp::Named("sigma2_rejects_areas") = sigma2_rejects_areas,
-		Rcpp::Named("sigma2_comps_hist") = sigma2_comps_hist,
-		Rcpp::Named("sigma2_tunes_hist") = sigma2_tunes_hist,
-		Rcpp::Named("sigma2_tuned_hist") = sigma2_tuned_hist,
+		Rcpp::Named("sigma2_comps") = sigma2_comps_hist,
+		Rcpp::Named("sigma2_tunes") = sigma2_tunes_hist,
+		Rcpp::Named("sigma2_tuned") = sigma2_tuned_hist,
 		Rcpp::Named("m") = m
 	);
 }

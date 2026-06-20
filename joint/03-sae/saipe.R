@@ -73,18 +73,18 @@ print(imh_out)
 
 ## A few of the sigma2 chains are likely not to move. The ESS function produces
 ## an NaN for them. Convert them to zero.
-ess_sigma2 = ess(imh_out$sigma2_hist)
+ess_sigma2 = ess(imh_out$sigma2)
 ess_sigma2[is.na(ess_sigma2)] = 0
-# ess_theta = ess(imh_out$theta_hist)
+# ess_theta = ess(imh_out$theta)
 # quantile(ess_sigma2, probs)
 # quantile(ess_theta, probs)
 
-# par_mcmc = cbind(imh_out$beta_hist, imh_out$gamma_hist,
-#	imh_out$phi2_hist, imh_out$tau2_hist)
-# multiESS(imh_out$beta_hist)
-# multiESS(imh_out$gamma_hist)
-# ess(imh_out$phi2_hist)
-# ess(imh_out$tau2_hist)
+# par_mcmc = cbind(imh_out$beta, imh_out$gamma,
+#	imh_out$phi2, imh_out$tau2)
+# multiESS(imh_out$beta)
+# multiESS(imh_out$gamma)
+# ess(imh_out$phi2)
+# ess(imh_out$tau2)
 # multiESS(par_mcmc)
 
 tbl_ess = tibble(
@@ -95,7 +95,7 @@ tbl_ess = tibble(
 	ess2 = quantile(ess_sigma2, probs[2]),
 	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(imh_out$elapsed)),
-	rejections = sum(imh_out$sigma2_rejects_hist)
+	rejections = sum(imh_out$sigma2_rejects)
 )
 
 # ----- AMH within Gibbs -----
@@ -105,16 +105,16 @@ control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1000,
 amh_out = gibbs_joint(y, s2, X, Z, df, init, control)
 print(amh_out)
 
-# plot(amh_out$beta_hist[,1], type = "l")
-# plot(amh_out$gamma_hist[,1], type = "l")
-# plot(amh_out$phi2_hist, type = "l")
-# plot(amh_out$tau2_hist, type = "l")
+# plot(amh_out$beta[,1], type = "l")
+# plot(amh_out$gamma[,1], type = "l")
+# plot(amh_out$phi2, type = "l")
+# plot(amh_out$tau2, type = "l")
 
-ess_sigma2 = ess(amh_out$sigma2_hist)
-# ess_theta = ess(amh_out$theta_hist)
+ess_sigma2 = ess(amh_out$sigma2)
+# ess_theta = ess(amh_out$theta)
 
 # i = which.min(ess_sigma2)
-# plot(amh_out$sigma2_hist[,i], type = "l")
+# plot(amh_out$sigma2[,i], type = "l")
 
 # hist(ess_sigma2)
 
@@ -126,7 +126,7 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_sigma2, probs[2]),
 	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(amh_out$elapsed)),
-	rejections = sum(amh_out$sigma2_rejects_hist)
+	rejections = sum(amh_out$sigma2_rejects)
 )
 
 # ----- ARMS within Gibbs -----
@@ -136,18 +136,18 @@ control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
 arms_out = gibbs_joint(y, s2, X, Z, df, init, control)
 print(arms_out)
 
-# plot(arms_out$beta_hist[,1], type = "l")
-# plot(arms_out$gamma_hist[,1], type = "l")
-# plot(arms_out$phi2_hist, type = "l")
-# plot(arms_out$tau2_hist, type = "l")
+# plot(arms_out$beta[,1], type = "l")
+# plot(arms_out$gamma[,1], type = "l")
+# plot(arms_out$phi2, type = "l")
+# plot(arms_out$tau2, type = "l")
 
-ess_sigma2 = ess(arms_out$sigma2_hist)
-# ess_theta = ess(arms_out$theta_hist)
+ess_sigma2 = ess(arms_out$sigma2)
+# ess_theta = ess(arms_out$theta)
 # quantile(ess_sigma2, probs)
 # quantile(ess_theta, probs)
 
 # i = which.min(ess_sigma2)
-# plot(arms_out$sigma2_hist[,i], type = "l")
+# plot(arms_out$sigma2[,i], type = "l")
 # hist(ess_sigma2)
 
 tbl_ess = tbl_ess %>% add_row(
@@ -158,7 +158,7 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_sigma2, probs[2]),
 	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(arms_out$elapsed)),
-	rejections = sum(arms_out$sigma2_rejects_hist)
+	rejections = sum(arms_out$sigma2_rejects)
 )
 
 # ----- VWS0 within Gibbs -----
@@ -170,12 +170,12 @@ control = control_joint(R = 3000, burn = 1000, thin = 1, report = 50,
 vws0_out = gibbs_joint(y, s2, X, Z, df, init, control)
 print(vws0_out)
 
-ess_sigma2 = ess(vws0_out$sigma2_hist)
-# ess_theta = ess(vws0_out$theta_hist)
+ess_sigma2 = ess(vws0_out$sigma2)
+# ess_theta = ess(vws0_out$theta)
 # quantile(ess_sigma2, probs)
 # quantile(ess_theta, probs)
 
-g = plot_rejects(vws0_out$sigma2_rejects_hist, burn = 0, tol = 1.0)
+g = plot_rejects(vws0_out$sigma2_rejects, burn = 0, tol = 1.0)
 ggsave("rejects-vws0.pdf", g, width = 3, height = 2)
 
 tbl_ess = tbl_ess %>% add_row(
@@ -186,7 +186,7 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_sigma2, probs[2]),
 	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(vws0_out$elapsed)),
-	rejections = sum(vws0_out$sigma2_rejects_hist)
+	rejections = sum(vws0_out$sigma2_rejects)
 )
 
 # ----- VWS1 within Gibbs -----
@@ -204,36 +204,36 @@ for (l in seq_len(nrow(tol_levels)))
 	gibbs_out = gibbs_joint(y, s2, X, Z, df, init, control)
 	print(gibbs_out)
 
-	# plot(gibbs_out$beta_hist[,1], type = "l")
-	# plot(gibbs_out$gamma_hist[,1], type = "l")
-	# plot(gibbs_out$phi2_hist, type = "l")
-	# plot(gibbs_out$tau2_hist, type = "l")
+	# plot(gibbs_out$beta[,1], type = "l")
+	# plot(gibbs_out$gamma[,1], type = "l")
+	# plot(gibbs_out$phi2, type = "l")
+	# plot(gibbs_out$tau2, type = "l")
 
-	ess_sigma2 = ess(gibbs_out$sigma2_hist)
-	# ess_theta = ess(gibbs_out$theta_hist)
+	ess_sigma2 = ess(gibbs_out$sigma2)
+	# ess_theta = ess(gibbs_out$theta)
 	# quantile(ess_sigma2, probs)
 	# quantile(ess_theta, probs)
 
-	# par_vws_mcmc = cbind(gibbs_out$beta_hist, gibbs_out$gamma_hist,
-	#	gibbs_out$phi2_hist, gibbs_out$tau2_hist)
-	# multiESS(gibbs_out$beta_hist)
-	# multiESS(gibbs_out$gamma_hist)
-	# ess(gibbs_out$phi2_hist)
-	# ess(gibbs_out$tau2_hist)
+	# par_vws_mcmc = cbind(gibbs_out$beta, gibbs_out$gamma,
+	#	gibbs_out$phi2, gibbs_out$tau2)
+	# multiESS(gibbs_out$beta)
+	# multiESS(gibbs_out$gamma)
+	# ess(gibbs_out$phi2)
+	# ess(gibbs_out$tau2)
 	# multiESS(par_vws_mcmc)
 
 	# i = which.min(ess_sigma2)
-	# plot(gibbs_out$sigma2_hist[,i], type = "l")
+	# plot(gibbs_out$sigma2[,i], type = "l")
 
-	g = plot_tunes(gibbs_out$sigma2_tunes_hist, burn = 500, tol = 0.05)
+	g = plot_tunes(gibbs_out$sigma2_tunes, burn = 500, tol = 0.05)
 	ff = sprintf("tunes-vws1-%d.pdf", l)
 	ggsave(ff, g, width = 3, height = 2)
 
-	g = plot_comps(gibbs_out$sigma2_comps_hist, burn = 500, tol = 0.05)
+	g = plot_comps(gibbs_out$sigma2_comps, burn = 500, tol = 0.05)
 	ff = sprintf("comps-vws1-%d.pdf", l)
 	ggsave(ff, g, width = 3, height = 2)
 
-	g = plot_rejects(gibbs_out$sigma2_rejects_hist, burn = 500, tol = 0.05)
+	g = plot_rejects(gibbs_out$sigma2_rejects, burn = 500, tol = 0.05)
 	ff = sprintf("rejects-vws1-%d.pdf", l)
 	ggsave(ff, g, width = 3, height = 2)
 
@@ -245,7 +245,7 @@ for (l in seq_len(nrow(tol_levels)))
 		ess2 = quantile(ess_sigma2, probs[2]),
 		ess3 = quantile(ess_sigma2, probs[3]),
 		elapsed = sum(unlist(gibbs_out$elapsed)),
-		rejections = sum(gibbs_out$sigma2_rejects_hist)
+		rejections = sum(gibbs_out$sigma2_rejects)
 	)
 
 	vws1_out[[l]] = gibbs_out
@@ -269,10 +269,10 @@ for (l in seq_len(nrow(tol_levels)))
 	gibbs_out = gibbs_joint(y, s2, X, Z, df, init, control)
 	print(gibbs_out)
 
-	ess_sigma2 = ess(gibbs_out$sigma2_hist)
+	ess_sigma2 = ess(gibbs_out$sigma2)
 
 	# i = which.min(ess_sigma2)
-	# plot(gibbs_out$sigma2_hist[,i], type = "l")
+	# plot(gibbs_out$sigma2[,i], type = "l")
 
 	tbl_ess = tbl_ess %>% add_row(
 		method = "VWS2",
@@ -282,7 +282,7 @@ for (l in seq_len(nrow(tol_levels)))
 		ess2 = quantile(ess_sigma2, probs[2]),
 		ess3 = quantile(ess_sigma2, probs[3]),
 		elapsed = sum(unlist(gibbs_out$elapsed)),
-		rejections = sum(gibbs_out$sigma2_rejects_hist)
+		rejections = sum(gibbs_out$sigma2_rejects)
 	)
 
 	vws2_out[[l]] = gibbs_out
@@ -305,10 +305,10 @@ if (FALSE) {
 	gibbs_out = gibbs_joint(y, s2, X, Z, df, init, control)
 	print(gibbs_out)
 
-	ess_sigma2 = ess(gibbs_out$sigma2_hist)
+	ess_sigma2 = ess(gibbs_out$sigma2)
 
 	i = which.min(ess_sigma2)
-	plot(gibbs_out$sigma2_hist[,i], type = "l")
+	plot(gibbs_out$sigma2[,i], type = "l")
 }
 
 # ----- Fit Fay-Herriot with Gibbs sampler -----
@@ -325,7 +325,7 @@ save.image("results.Rdata")
 # ----- Additional Plots -----
 
 # Dot plot of joint sampling variances versus estimated
-g = data.frame(s2 = s2, joint = apply(vws2_out[[4]]$sigma2_hist, 2, mean)) %>%
+g = data.frame(s2 = s2, joint = apply(vws2_out[[4]]$sigma2, 2, mean)) %>%
 	ggplot() +
 	geom_point(aes(s2, joint)) +
 	geom_abline(slope = 1, lty = 2, col = "red") +
@@ -336,8 +336,8 @@ ggsave("variance-model-vs-estimated.pdf", g, width = 4, height = 4, unit="in")
 
 # Model uncertainty in sigma2 versus area sample size
 g = data.frame(df = saipe$df, log_n = log(saipe$hu_sampled), s2 = s2,
-		lo = apply(vws2_out[[4]]$sigma2_hist, 2, quantile, probs = alpha/2),
-		hi = apply(vws2_out[[4]]$sigma2_hist, 2, quantile, probs = 1-alpha/2)) %>%
+		lo = apply(vws2_out[[4]]$sigma2, 2, quantile, probs = alpha/2),
+		hi = apply(vws2_out[[4]]$sigma2, 2, quantile, probs = 1-alpha/2)) %>%
 	mutate(width = hi - lo) %>%
 	ggplot() +
 	geom_point(aes(x = log_n, y = width)) +
@@ -350,10 +350,10 @@ ggsave("variance-ci-width.pdf", g, width = 4, height = 4)
 # area sample size.
 g = data.frame(
 		log_n = log(saipe$hu_sampled),
-		vws_lo = apply(vws2_out[[4]]$theta_hist, 2, quantile, probs = alpha/2),
-		vws_hi = apply(vws2_out[[4]]$theta_hist, 2, quantile, probs = 1-alpha/2),
-		fh_lo = apply(fh_out$theta_hist, 2, quantile, probs = alpha/2),
-		fh_hi = apply(fh_out$theta_hist, 2, quantile, probs = 1-alpha/2)) %>%
+		vws_lo = apply(vws2_out[[4]]$theta, 2, quantile, probs = alpha/2),
+		vws_hi = apply(vws2_out[[4]]$theta, 2, quantile, probs = 1-alpha/2),
+		fh_lo = apply(fh_out$theta, 2, quantile, probs = alpha/2),
+		fh_hi = apply(fh_out$theta, 2, quantile, probs = 1-alpha/2)) %>%
 	mutate(vws_width = vws_hi - vws_lo) %>%
 	mutate(fh_width = fh_hi - fh_lo) %>%
 	mutate(ratio = fh_width / vws_width) %>%
@@ -370,8 +370,8 @@ ggsave("theta-ci-ratio.pdf", g, width = 5, height = 5)
 
 # Overlay histograms of the ESS for sigma2
 # g = data.frame(
-#		imh = ess(imh_out$sigma2_hist),
-#		vws = ess(vws2_out[[4]]$sigma2_hist)) %>%
+#		imh = ess(imh_out$sigma2),
+#		vws = ess(vws2_out[[4]]$sigma2)) %>%
 #	ggplot() +
 #	geom_histogram(aes(x = imh), col = "black", fill = "white", bins = 30, alpha = 0.4) +
 #	geom_histogram(aes(x = vws),  col = "black", fill = "red2", bins = 30, alpha = 0.4) +
@@ -381,10 +381,10 @@ ggsave("theta-ci-ratio.pdf", g, width = 5, height = 5)
 # ggsave("sigma2-ess-hist.pdf", g, width = 5, height = 3)
 
 df_plot = data.frame(
-		imh = ess(imh_out$sigma2_hist),
-		arms = ess(arms_out$sigma2_hist),
-		amh = ess(amh_out$sigma2_hist),
-		vws = ess(vws2_out[[4]]$sigma2_hist)) %>%
+		imh = ess(imh_out$sigma2),
+		arms = ess(arms_out$sigma2),
+		amh = ess(amh_out$sigma2),
+		vws = ess(vws2_out[[4]]$sigma2)) %>%
 	mutate(iter = row_number())
 # df_quantiles = data.frame(probs = c(0.20, 0.40, 0.60, 0.80)) %>%
 #	mutate(imh = quantile(df_plot$imh, probs, na.rm = TRUE)) %>%
@@ -412,9 +412,9 @@ ggsave("sigma2-ess-ecdf.pdf", g, width = 4, height = 3)
 # Overlay trace plot for the VWS and IMH sigma2
 # Pick the 3 counties with worst IMH chains for sigma2
 # and 3 counties with worst VWS chains
-ess_imh = ess(imh_out$sigma2_hist)
+ess_imh = ess(imh_out$sigma2)
 ess_imh[is.na(ess_imh)] = 0
-ess_vws = ess(vws2_out[[4]]$sigma2_hist)
+ess_vws = ess(vws2_out[[4]]$sigma2)
 lowest_imh = order(ess_imh)[1:3]
 lowest_vws = order(ess_vws)[1:3]
 plot_ess = c(lowest_imh, lowest_vws)
@@ -426,8 +426,8 @@ for (ii in 1:length(plot_ess)) {
 	idx = plot_ess[ii]
 
 	g = data.frame(
-			imh = imh_out$sigma2_hist[,idx],
-			vws = vws2_out[[4]]$sigma2_hist[,idx]) %>%
+			imh = imh_out$sigma2[,idx],
+			vws = vws2_out[[4]]$sigma2[,idx]) %>%
 		mutate(x = row_number()) %>%
 		ggplot() +
 		geom_line(aes(x=x, y=vws), color = "red2", alpha = 0.4) +
@@ -440,11 +440,11 @@ for (ii in 1:length(plot_ess)) {
 }
 
 # Also look at the three worst mixing chains under AMH
-ess_amh = ess(amh_out$sigma2_hist)
+ess_amh = ess(amh_out$sigma2)
 lowest_amh = order(ess_amh)[1:3]
 for (ii in 1:length(lowest_amh)) {
 	idx = lowest_amh[ii]
-	g = data.frame(amh = amh_out$sigma2_hist[,idx]) %>%
+	g = data.frame(amh = amh_out$sigma2[,idx]) %>%
 		mutate(x = row_number()) %>%
 		ggplot() +
 		geom_line(aes(x=x, y=amh), linewidth = 0.5) +
@@ -457,11 +457,11 @@ for (ii in 1:length(lowest_amh)) {
 print(saipe[lowest_amh,])
 
 # Also look at the three worst mixing chains under ARMS
-ess_arms = ess(arms_out$sigma2_hist)
+ess_arms = ess(arms_out$sigma2)
 lowest_arms = order(ess_arms)[1:3]
 for (ii in 1:length(lowest_arms)) {
 	idx = lowest_arms[ii]
-	g = data.frame(arms = arms_out$sigma2_hist[,idx]) %>%
+	g = data.frame(arms = arms_out$sigma2[,idx]) %>%
 		mutate(x = row_number()) %>%
 		ggplot() +
 		geom_line(aes(x=x, y=arms), linewidth = 0.5) +
@@ -475,18 +475,18 @@ print(saipe[lowest_arms,])
 
 # Plot of estimates of sigma_i^2 for VWS vs IMH with interval widths
 
-sigma2_imh = apply(imh_out$sigma2_hist, 2, mean)
-sigma2_vws = apply(vws2_out[[4]]$sigma2_hist, 2, mean)
-sigma2_sd_imh = apply(imh_out$sigma2_hist, 2, sd)
-sigma2_sd_vws = apply(vws2_out[[4]]$sigma2_hist, 2, sd)
-sigma2_ci_imh = apply(imh_out$sigma2_hist, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
-sigma2_ci_vws = apply(vws2_out[[4]]$sigma2_hist, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
+sigma2_imh = apply(imh_out$sigma2, 2, mean)
+sigma2_vws = apply(vws2_out[[4]]$sigma2, 2, mean)
+sigma2_sd_imh = apply(imh_out$sigma2, 2, sd)
+sigma2_sd_vws = apply(vws2_out[[4]]$sigma2, 2, sd)
+sigma2_ci_imh = apply(imh_out$sigma2, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
+sigma2_ci_vws = apply(vws2_out[[4]]$sigma2, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
 sigma2_width_imh = apply(sigma2_ci_imh, 1, diff)
 sigma2_width_vws = apply(sigma2_ci_vws, 1, diff)
-ess_imh_sigma2 = ess(imh_out$sigma2_hist)
+ess_imh_sigma2 = ess(imh_out$sigma2)
 
 # Plot number of tuned VWS proposals by iteration
-# data.frame(tuned = vws_out$sigma2_tuned_hist) %>%
+# data.frame(tuned = vws_out$sigma2_tuned) %>%
 # 	mutate(iter = row_number()) %>%
 # 	filter(iter > 100) %>%
 # 	ggplot() +
@@ -498,12 +498,12 @@ ess_imh_sigma2 = ess(imh_out$sigma2_hist)
 # 	theme_minimal()
 
 # Plot number of VWS rejections per area by iteration
-# data.frame(tuned = vws_out$sigma2_rejects_hist / m) %>%
+# data.frame(tuned = vws_out$sigma2_rejects / m) %>%
 # 	mutate(iter = row_number()) %>%
 # 	filter(iter > 100) %>%
 # 	ggplot() +
 # 	geom_line(aes(iter, tuned)) +
-# 	geom_rect(xmin = 0, xmax = 20, ymin = min(vws_out$sigma2_rejects_hist / m),
+# 	geom_rect(xmin = 0, xmax = 20, ymin = min(vws_out$sigma2_rejects / m),
 # 		ymax = Inf, fill = "red") +
 # 	xlab("Iteration") +
 # 	ylab("Number of VWS Rejections Per Area") +
@@ -538,7 +538,7 @@ g = data.frame(imh = sigma2_width_imh, vws = sigma2_width_vws) %>%
 	theme_light()
 ggsave("sigma2-width-imh-vs-vws.pdf", g, width = 4, height = 3, unit="in")
 
-# g = data.frame(updates = vws_out$sigma2_tunes_hist) %>%
+# g = data.frame(updates = vws_out$sigma2_tunes) %>%
 #	mutate(iter = row_number()) %>%
 #	ggplot() +
 #	geom_line(aes(iter, log10(updates + 1))) +
@@ -552,7 +552,7 @@ ggsave("sigma2-width-imh-vs-vws.pdf", g, width = 4, height = 3, unit="in")
 # Plot rejections for VWS with limited tuning period. Omit iterations during
 # the tuning period.
 for (l in 1:nrow(tol_levels)) {
-	g = vws2_out[[l]]$sigma2_rejects_hist %>%
+	g = vws2_out[[l]]$sigma2_rejects %>%
 		tail(-tune) %>%
 		plot_rejects(burn = 0, tol = 100)
 	ff = sprintf("rejects-vws2-%d-tail.pdf", l)
@@ -624,16 +624,16 @@ imh3_out = gibbs_joint(y, s2, X, Z, df, init, control)
 imh4_out = gibbs_joint(y, s2, X, Z, df, init, control)
 
 # TBD: can we get the statistic for all m sigma2 entries, or is that too much?
-ess_sigma2 = ess(imh_out$sigma2_hist)
+ess_sigma2 = ess(imh_out$sigma2)
 lowest_imh = order(ess_sigma2)[1:3]
 # lowest_imh = 1:m
 
 # Try Gelman-Rubin with coda package on IMH.
 mcmc_list = mcmc.list(
-	as.mcmc(imh_out$sigma2_hist[,lowest_imh]),
-	as.mcmc(imh2_out$sigma2_hist[,lowest_imh]),
-	as.mcmc(imh3_out$sigma2_hist[,lowest_imh]),
-	as.mcmc(imh4_out$sigma2_hist[,lowest_imh])
+	as.mcmc(imh_out$sigma2[,lowest_imh]),
+	as.mcmc(imh2_out$sigma2[,lowest_imh]),
+	as.mcmc(imh3_out$sigma2[,lowest_imh]),
+	as.mcmc(imh4_out$sigma2[,lowest_imh])
 )
 gr_imh = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
 
@@ -642,10 +642,10 @@ gr_imh = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
 # sampler.
 
 mcmc_list = mcmc.list(
-	as.mcmc(vws2_out[[1]]$sigma2_hist[,lowest_imh]),
-	as.mcmc(vws2_out[[2]]$sigma2_hist[,lowest_imh]),
-	as.mcmc(vws2_out[[3]]$sigma2_hist[,lowest_imh]),
-	as.mcmc(vws2_out[[4]]$sigma2_hist[,lowest_imh])
+	as.mcmc(vws2_out[[1]]$sigma2[,lowest_imh]),
+	as.mcmc(vws2_out[[2]]$sigma2[,lowest_imh]),
+	as.mcmc(vws2_out[[3]]$sigma2[,lowest_imh]),
+	as.mcmc(vws2_out[[4]]$sigma2[,lowest_imh])
 )
 gr_vws = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
 
@@ -654,11 +654,11 @@ gr_vws = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
 # TBD: Geweke diagnostic seems about to detect the worst mixing chains. But how
 # to summarize it in a table for results?
 
-z_geweke = geweke(imh_out$sigma2_hist)
+z_geweke = geweke(imh_out$sigma2)
 pval = pnorm(2 * abs(z_geweke), lower.tail = FALSE)
 idx = order(pval)[1:6]
 pval[idx]
-plot(imh_out$sigma2_hist[,idx[6]], type = "l")
+plot(imh_out$sigma2[,idx[6]], type = "l")
 
 plot(density(z_geweke))
 curve(dnorm, add = TRUE, lty = 2)

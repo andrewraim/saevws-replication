@@ -148,21 +148,21 @@ gibbs_unmatch = function(y, sigma, X,
 #' @export
 summary.gibbs_unmatch = function(object, pr = c(0.05, 0.95), ...)
 {
-	d = ncol(object$beta_hist)
+	d = ncol(object$beta)
 
 	df_beta = as.data.frame(cbind(
-		apply(object$beta_hist, 2, mean),
-		apply(object$beta_hist, 2, sd),
-		t(apply(object$beta_hist, 2, quantile, probs = pr)),
-		apply(object$beta_hist, 2, ess)
+		apply(object$beta, 2, mean),
+		apply(object$beta, 2, sd),
+		t(apply(object$beta, 2, quantile, probs = pr)),
+		apply(object$beta, 2, ess)
 	))
 	rownames(df_beta) = sprintf("beta%d", 1:d)
 
 	df_tau2 = as.data.frame(cbind(
-		mean(object$tau2_hist),
-		sd(object$tau2_hist),
-		t(quantile(object$tau2_hist, probs = pr)),
-		ess(object$tau2_hist)
+		mean(object$tau2),
+		sd(object$tau2),
+		t(quantile(object$tau2, probs = pr)),
+		ess(object$tau2)
 	))
 	rownames(df_tau2) = sprintf("tau2")
 
@@ -197,14 +197,14 @@ print.gibbs_unmatch = function(x, pr = c(0.05, 0.95), ...)
 	cat("----\n")
 	printf("mu step\n")
 	printf("   Proposed: %d  Rejected: %d\n",
-		sum(x$mu_rejects_hist) + x$R * x$m,
-		sum(x$mu_rejects_hist))
+		sum(x$mu_rejects) + x$R * x$m,
+		sum(x$mu_rejects))
 
 	printf("   Rejection rate: %g%%\n",
-		100 * sum(x$mu_rejects_hist) / (sum(x$mu_rejects_hist) + x$R*x$m))
+		100 * sum(x$mu_rejects) / (sum(x$mu_rejects) + x$R*x$m))
 
 	if (x$inner_method == "vws-tune") {
-		printf("   Avg regions: %g\n", sum(x$mu_comps_hist) / (x$R * x$m))
+		printf("   Avg regions: %g\n", sum(x$mu_comps) / (x$R * x$m))
 	}
 
 	cat("----\n")

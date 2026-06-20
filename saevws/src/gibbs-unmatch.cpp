@@ -317,21 +317,21 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	);
 
 	return Rcpp::List::create(
-		Rcpp::Named("beta_hist") = beta_hist,
-		Rcpp::Named("tau2_hist") = tau2_hist,
-		Rcpp::Named("mu_hist") = mu_hist,
+		Rcpp::Named("beta") = beta_hist,
+		Rcpp::Named("tau2") = tau2_hist,
+		Rcpp::Named("mu") = mu_hist,
 		Rcpp::Named("R_keep") = R_keep,
 		Rcpp::Named("elapsed") = elapsed,
 		Rcpp::Named("R") = R,
 		Rcpp::Named("burn") = burn,
 		Rcpp::Named("thin") = thin,
 		Rcpp::Named("inner_method") = inner_method,
-		Rcpp::Named("mu_rejects_hist") = mu_rejects_hist,
+		Rcpp::Named("mu_rejects") = mu_rejects_hist,
 		Rcpp::Named("mu_rejects_areas") = mu_rejects_areas,
-		Rcpp::Named("mu_comps_hist") = mu_comps_hist,
-		Rcpp::Named("mu_tunes_hist") = mu_tunes_hist,
-		Rcpp::Named("mu_tuned_hist") = mu_tuned_hist,
-		Rcpp::Named("mu_mem_hist") = mu_mem_hist,
+		Rcpp::Named("mu_comps") = mu_comps_hist,
+		Rcpp::Named("mu_tunes") = mu_tunes_hist,
+		Rcpp::Named("mu_tuned") = mu_tuned_hist,
+		Rcpp::Named("mu_mem") = mu_mem_hist,
 		Rcpp::Named("m") = m
 	);
 }

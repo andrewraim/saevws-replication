@@ -27,9 +27,15 @@ inline void stopifnot(bool cond, const char* fmt, ...)
 
 inline void logger(const char* fmt, ...)
 {
-	const Rcpp::Datetime& dt = Rcpp::Datetime(time(NULL));
+	// Get the current time in the local time zone
+    std::time_t raw = std::time(nullptr);
+    std::tm* local = std::localtime(&raw);
 
-	// Insert placeholders into formatted string; see
+	// Write formatted time to a string
+	char buffer[64];
+	strftime(buffer, 64, "%Y-%m-%d %H:%M:%S", local);
+
+	// Insert "..." placeholders into format string for message; see
 	// <https://stackoverflow.com/q/1056411>
 	char msg[256];
 	va_list args;
@@ -37,8 +43,8 @@ inline void logger(const char* fmt, ...)
 	vsnprintf(msg, 255, fmt, args);
 	va_end(args);
 
-	Rprintf("%04d:%02d:%02d %02d:%02d:%02d - %s", dt.getYear(), dt.getMonth(),
-		dt.getDay(), dt.getHours(), dt.getMinutes(), dt.getSeconds(), msg);
+	// Print the formatted message with timestamp
+	Rprintf("%s - %s", buffer, msg);
 }
 
 inline arma::mat crossprod(const arma::mat& X)

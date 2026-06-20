@@ -172,38 +172,38 @@ gibbs_joint = function(y, s2, X, Z, df,
 #' @export
 summary.gibbs_joint = function(object, pr = c(0.05, 0.95), ...)
 {
-	d1 = ncol(object$beta_hist)
-	d2 = ncol(object$gamma_hist)
+	d1 = ncol(object$beta)
+	d2 = ncol(object$gamma)
 
 	df_beta = as.data.frame(cbind(
-		apply(object$beta_hist, 2, mean),
-		apply(object$beta_hist, 2, sd),
-		t(apply(object$beta_hist, 2, quantile, probs = pr)),
-		apply(object$beta_hist, 2, ess)
+		apply(object$beta, 2, mean),
+		apply(object$beta, 2, sd),
+		t(apply(object$beta, 2, quantile, probs = pr)),
+		apply(object$beta, 2, ess)
 	))
 	rownames(df_beta) = sprintf("beta%d", 1:d1)
 
 	df_gamma = as.data.frame(cbind(
-		apply(object$gamma_hist, 2, mean),
-		apply(object$gamma_hist, 2, sd),
-		t(apply(object$gamma_hist, 2, quantile, probs = pr)),
-		apply(object$gamma_hist, 2, ess)
+		apply(object$gamma, 2, mean),
+		apply(object$gamma, 2, sd),
+		t(apply(object$gamma, 2, quantile, probs = pr)),
+		apply(object$gamma, 2, ess)
 	))
 	rownames(df_gamma) = sprintf("gamma%d", 1:d2)
 
 	df_phi2 = as.data.frame(cbind(
-		mean(object$phi2_hist),
-		sd(object$phi2_hist),
-		t(quantile(object$phi2_hist, probs = pr)),
-		ess(object$phi2_hist)
+		mean(object$phi2),
+		sd(object$phi2),
+		t(quantile(object$phi2, probs = pr)),
+		ess(object$phi2)
 	))
 	rownames(df_phi2) = sprintf("phi2")
 
 	df_tau2 = as.data.frame(cbind(
-		mean(object$tau2_hist),
-		sd(object$tau2_hist),
-		t(quantile(object$tau2_hist, probs = pr)),
-		ess(object$tau2_hist)
+		mean(object$tau2),
+		sd(object$tau2),
+		t(quantile(object$tau2, probs = pr)),
+		ess(object$tau2)
 	))
 	rownames(df_tau2) = sprintf("tau2")
 
@@ -238,14 +238,14 @@ print.gibbs_joint = function(x, pr = c(0.05, 0.95), ...)
 	cat("----\n")
 	printf("sigma2 step\n")
 	printf("   Proposed: %d  Rejected: %d\n",
-		sum(x$sigma2_rejects_hist) + x$R * x$m,
-		sum(x$sigma2_rejects_hist))
+		sum(x$sigma2_rejects) + x$R * x$m,
+		sum(x$sigma2_rejects))
 
 	printf("   Rejection rate: %g%%\n",
-		100 * sum(x$sigma2_rejects_hist) / (sum(x$sigma2_rejects_hist) + x$R*x$m))
+		100 * sum(x$sigma2_rejects) / (sum(x$sigma2_rejects) + x$R*x$m))
 
 	if (x$inner_method == "vws-tune") {
-		printf("   Avg regions: %g\n", sum(x$sigma2_comps_hist) / (x$R * x$m))
+		printf("   Avg regions: %g\n", sum(x$sigma2_comps) / (x$R * x$m))
 	}
 
 	cat("----\n")

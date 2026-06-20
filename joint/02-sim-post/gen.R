@@ -3,7 +3,6 @@ library(jsonlite)
 
 # ---- Begin config -----
 m_levels = c(500, 2000)
-#tol1_levels = c(0.60, 0.75, 0.90)
 tol1_levels = c(0.5, 0.75, 0.85)
 tol2_levels = c(0.0001, 0.001, 0.01)
 # ---- End config -----

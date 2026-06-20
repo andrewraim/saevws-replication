@@ -39,7 +39,7 @@ stopifnot(exists("tol2"))
 
 # ----- Set up design matrices and data-generating parameters -----
 tau_true = sqrt(0.25)
-phi_true =  sqrt(0.20)
+phi_true = sqrt(0.20)
 
 beta_true = c(1.5, 0.85)
 x = rnorm(m, mean = 8, sd = 2)
@@ -137,17 +137,16 @@ for (s in setdiff(seq_len(N_sim), seq_len(last_rep))) {
 	phi2_init = sigma(lm1_out)^2
 	gamma_init = coef(lm2_out)
 	tau2_init = sigma(lm2_out)^2
-	init = get_init(m, d1, d2, beta = beta_init, gamma = gamma_init,
+	init = init_joint(m, d1, d2, beta = beta_init, gamma = gamma_init,
 		sigma2 = s2, phi2 = phi2_init, tau2 = tau2_init)
 
 	# ----- MWG -----
 	logger("Running MWG\n")
-	vws_ctrl = get_vws_control(method = "imh")
-	control = get_gibbs_control(R = mwg_draws, burn = mwg_burn,
-		thin = mwg_thin, report = mwg_report, vws = vws_ctrl,
+	inner_ctrl = control_inner(method = "imh")
+	control = control_joint(R = mwg_draws, burn = mwg_burn,
+		thin = mwg_thin, report = mwg_report, inner = inner_ctrl,
 		save_latent = seq_len(m))
-	fixed = get_fixed()
-	gibbs0_out = gibbs(y, s2, X, Z, df, init, control, fixed)
+	gibbs0_out = gibbs_joint(y, s2, X, Z, df, init, control)
 
 	if (save_fits) {
 		saveRDS(gibbs0_out, sprintf("fits/mwg-%04d.rds", s))
@@ -155,14 +154,14 @@ for (s in setdiff(seq_len(N_sim), seq_len(last_rep))) {
 
 	autocorr0 = numeric(m)
 	for (i in 1:m) {
-		acf_out = acf(gibbs0_out$sigma2_hist[,i], lag.max = 1, plot = F)
+		acf_out = acf(gibbs0_out$sigma2[,i], lag.max = 1, plot = F)
 		autocorr0[i] = acf_out$acf[2,1,1]
 	}
 
-	ess0_out = ess(gibbs0_out$sigma2_hist)
-	theta_ess0_out = ess(gibbs0_out$theta_hist)
-	par0_mcmc = cbind(gibbs0_out$beta_hist, gibbs0_out$gamma_hist,
-		gibbs0_out$phi2_hist, gibbs0_out$tau2_hist)
+	ess0_out = ess(gibbs0_out$sigma2)
+	theta_ess0_out = ess(gibbs0_out$theta)
+	par0_mcmc = cbind(gibbs0_out$beta, gibbs0_out$gamma,
+		gibbs0_out$phi2, gibbs0_out$tau2)
 	df_mwg$essQ1[s] = quantile(ess0_out, probs[1], na.rm = TRUE)
 	df_mwg$essQ2[s] = quantile(ess0_out, probs[2], na.rm = TRUE)
 	df_mwg$essQ3[s] = quantile(ess0_out, probs[3], na.rm = TRUE)
@@ -175,7 +174,7 @@ for (s in setdiff(seq_len(N_sim), seq_len(last_rep))) {
 	df_mwg$theta_essQ2[s] = quantile(theta_ess0_out, probs[2], na.rm = TRUE)
 	df_mwg$theta_essQ3[s] = quantile(theta_ess0_out, probs[3], na.rm = TRUE)
 
-	df_mwg$rejections[s] = sum(gibbs0_out$sigma2_rejections_hist)
+	df_mwg$rejections[s] = sum(gibbs0_out$sigma2_rejections)
 	df_mwg$elapsed[s] = sum(unlist(gibbs0_out$elapsed))
 
 	write_csv(df_mwg, file = ff_mwg)
@@ -183,14 +182,13 @@ for (s in setdiff(seq_len(N_sim), seq_len(last_rep))) {
 
 	# ----- VWG -----
 	logger("Running VWG\n")
-	vws_ctrl = get_vws_control(tol1 = tol1, tol2 = tol2, max_rejects = 1e6,
-		method = "vws-tune")
-	control = get_gibbs_control(R = vwg_draws, burn = vwg_burn,
-		thin = vwg_thin, report = vwg_report, vws = vws_ctrl,
+	inner_ctrl = control_inner(tol_suff = tol1, tol_merge = tol2,
+		max_rejects = 1e6, method = "vws-tune")
+	control = control_joint(R = vwg_draws, burn = vwg_burn,
+		thin = vwg_thin, report = vwg_report, inner = inner_ctrl,
 		save_latent = seq_len(m))
-	fixed = get_fixed()
 	gibbs1_out = tryCatch({
-		gibbs(y, s2, X, Z, df, init, control, fixed)
+		gibbs_joint(y, s2, X, Z, df, init, control)
 	}, error = function(e) {
 		printf("VWG failed\n")
 		NULL
@@ -203,14 +201,14 @@ for (s in setdiff(seq_len(N_sim), seq_len(last_rep))) {
 	if (!is.null(gibbs1_out)) {
 		autocorr1 = numeric(m)
 		for (i in 1:m) {
-			acf_out = acf(gibbs1_out$sigma2_hist[,i], lag.max = 1, plot = F)
+			acf_out = acf(gibbs1_out$sigma2[,i], lag.max = 1, plot = F)
 			autocorr1[i] = acf_out$acf[2,1,1]
 		}
 
-		ess1_out = ess(gibbs1_out$sigma2_hist)
-		theta_ess1_out = ess(gibbs1_out$theta_hist)
-		par1_mcmc = cbind(gibbs1_out$beta_hist, gibbs1_out$gamma_hist,
-			gibbs1_out$phi2_hist, gibbs1_out$tau2_hist)
+		ess1_out = ess(gibbs1_out$sigma2)
+		theta_ess1_out = ess(gibbs1_out$theta)
+		par1_mcmc = cbind(gibbs1_out$beta, gibbs1_out$gamma,
+			gibbs1_out$phi2, gibbs1_out$tau2)
 		df_vwg$essQ1[s] = quantile(ess1_out, probs[1], na.rm = TRUE)
 		df_vwg$essQ2[s] = quantile(ess1_out, probs[2], na.rm = TRUE)
 		df_vwg$essQ3[s] = quantile(ess1_out, probs[3], na.rm = TRUE)
@@ -223,17 +221,17 @@ for (s in setdiff(seq_len(N_sim), seq_len(last_rep))) {
 		df_vwg$theta_essQ2[s] = quantile(theta_ess1_out, probs[2], na.rm = TRUE)
 		df_vwg$theta_essQ3[s] = quantile(theta_ess1_out, probs[3], na.rm = TRUE)
 
-		df_vwg$rejections[s] = sum(gibbs1_out$sigma2_rejections_hist)
+		df_vwg$rejections[s] = sum(gibbs1_out$sigma2_rejections)
 		df_vwg$elapsed[s] = sum(unlist(gibbs1_out$elapsed))
 
 		df_vwg$knot_updates_burn[s] =
-			data.frame(updates = gibbs1_out$sigma2_knot_updates_hist) |>
+			data.frame(updates = gibbs1_out$sigma2_tunes) |>
 			filter(row_number() <= vwg_burn) |>
 			pull(updates) |>
 			sum()
 
 		df_vwg$knot_updates_keep[s] =
-			data.frame(updates = gibbs1_out$sigma2_knot_updates_hist) |>
+			data.frame(updates = gibbs1_out$sigma2_tunes) |>
 			filter(row_number() > vwg_burn) |>
 			pull(updates) |>
 			sum()

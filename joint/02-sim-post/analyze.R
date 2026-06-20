@@ -125,23 +125,36 @@ tbl_vwg |>
 
 tbl_mwg |>
 	group_by(m) |>
-	summarize(essQ1 = mean(theta_essQ1), essQ2 = mean(theta_essQ2),
-		essQ3 = mean(theta_essQ3), par_mess = mean(par_mess)) |>
+	summarize(essQ1_theta = mean(theta_essQ1),
+		essQ2_theta = mean(theta_essQ2),
+		essQ3_theta = mean(theta_essQ3),
+		essQ1_sec_sigma2 = mean(essQ1 / elapsed),
+		essQ2_sec_sigma2 = mean(essQ2 / elapsed),
+		essQ3_sec_sigma2 = mean(essQ3 / elapsed),
+		par_mess = mean(par_mess)) |>
 	mutate(m = dfmt(m)) |>
-	mutate(essQ1 = dfmt(essQ1)) |>
-	mutate(essQ2 = dfmt(essQ2)) |>
-	mutate(essQ3 = dfmt(essQ3)) |>
+	mutate(essQ1_theta = dfmt(essQ1_theta)) |>
+	mutate(essQ2_theta = dfmt(essQ2_theta)) |>
+	mutate(essQ3_theta = dfmt(essQ3_theta)) |>
+	mutate(essQ1_sec_sigma2 = sprintf("%0.1f", essQ1_sec_sigma2)) |>
+	mutate(essQ2_sec_sigma2 = sprintf("%0.1f", essQ2_sec_sigma2)) |>
+	mutate(essQ3_sec_sigma2 = sprintf("%0.1f", essQ3_sec_sigma2)) |>
 	mutate(par_mess = dfmt(par_mess)) |>
 	mutate(tol1 = NA) |>
 	mutate(tol2 = NA) |>
-	select(m, tol1, tol2, essQ1, essQ2, essQ3, par_mess) |>
+	select(m, tol1, tol2, essQ1_theta, essQ2_theta, essQ3_theta,
+		essQ1_sec_sigma2, essQ2_sec_sigma2, essQ3_sec_sigma2, par_mess) |>
 	kable(booktabs = T, linesep = "")
 
 tbl_vwg |>
 	mutate(m = dfmt(m)) |>
-	mutate(essQ1 = dfmt(theta_essQ1)) |>
-	mutate(essQ2 = dfmt(theta_essQ2)) |>
-	mutate(essQ3 = dfmt(theta_essQ3)) |>
+	mutate(essQ1_theta = dfmt(theta_essQ1)) |>
+	mutate(essQ2_theta = dfmt(theta_essQ2)) |>
+	mutate(essQ3_theta = dfmt(theta_essQ3)) |>
+	mutate(essQ1_sec_sigma2 = sprintf("%0.1f", essQ1 / elapsed)) |>
+	mutate(essQ2_sec_sigma2 = sprintf("%0.1f", essQ2 / elapsed)) |>
+	mutate(essQ3_sec_sigma2 = sprintf("%0.1f", essQ3 / elapsed)) |>
 	mutate(par_mess = dfmt(par_mess)) |>
-	select(m, tol1, tol2, essQ1, essQ2, essQ3, par_mess) |>
+	select(m, tol1, tol2, essQ1_theta, essQ2_theta, essQ3_theta,
+		essQ1_sec_sigma2, essQ2_sec_sigma2, essQ3_sec_sigma2, par_mess) |>
 	kable(booktabs = T, linesep = "")

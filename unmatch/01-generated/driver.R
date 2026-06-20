@@ -41,11 +41,11 @@ control = control_unmatch(R = 30000, burn = 28000, thin = 1, report = 5000,
 imh_out = gibbs_unmatch(y, sigma, X, init, control)
 print(imh_out)
 
-ess_mu = ess(imh_out$mu_hist)
+ess_mu = ess(imh_out$mu)
 ess_mu[is.na(ess_mu)] = 0
 
 # i = which.min(ess_mu)
-# plot(imh_out$mu_hist[,i], type = "l")
+# plot(imh_out$mu[,i], type = "l")
 
 tbl_ess = tibble(
 	method = "IMH",
@@ -55,7 +55,7 @@ tbl_ess = tibble(
 	ess2 = quantile(ess_mu, probs[2]),
 	ess3 = quantile(ess_mu, probs[3]),
 	elapsed = sum(unlist(imh_out$elapsed)),
-	rejections = sum(imh_out$mu_rejects_hist)
+	rejections = sum(imh_out$mu_rejects)
 )
 
 # ----- AMH within Gibbs -----
@@ -66,15 +66,15 @@ control = control_unmatch(R = 10000, burn = 8000, thin = 1, report = 5000,
 amh_out = gibbs_unmatch(y, sigma, X, init, control)
 print(amh_out)
 
-# plot(amh_out$beta_hist[,1], type = "l")
-# plot(amh_out$beta_hist[,2], type = "l")
-# plot(amh_out$tau2_hist, type = "l")
+# plot(amh_out$beta[,1], type = "l")
+# plot(amh_out$beta[,2], type = "l")
+# plot(amh_out$tau2, type = "l")
 
-ess_mu = ess(amh_out$mu_hist)
+ess_mu = ess(amh_out$mu)
 # hist(ess_mu)
 
 # i = which.min(ess_mu)
-# plot(amh_out$mu_hist[,i], type = "l")
+# plot(amh_out$mu[,i], type = "l")
 
 tbl_ess = tbl_ess %>% add_row(
 	method = "AMH",
@@ -84,7 +84,7 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_mu, probs[2]),
 	ess3 = quantile(ess_mu, probs[3]),
 	elapsed = sum(unlist(amh_out$elapsed)),
-	rejections = sum(amh_out$mu_rejects_hist)
+	rejections = sum(amh_out$mu_rejects)
 )
 
 # ----- ARMS within Gibbs -----
@@ -95,15 +95,15 @@ control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
 arms_out = gibbs_unmatch(y, sigma, X, init, control)
 print(arms_out)
 
-# plot(arms_out$beta_hist[,1], type = "l")
-# plot(arms_out$beta_hist[,2], type = "l")
-# plot(arms_out$tau2_hist, type = "l")
+# plot(arms_out$beta[,1], type = "l")
+# plot(arms_out$beta[,2], type = "l")
+# plot(arms_out$tau2, type = "l")
 
-ess_mu = ess(arms_out$mu_hist)
+ess_mu = ess(arms_out$mu)
 # hist(ess_mu)
 
 # i = which.min(ess_mu)
-# plot(arms_out$mu_hist[,i], type = "l")
+# plot(arms_out$mu[,i], type = "l")
 
 tbl_ess = tbl_ess %>% add_row(
 	method = "ARMS",
@@ -113,7 +113,7 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_mu, probs[2]),
 	ess3 = quantile(ess_mu, probs[3]),
 	elapsed = sum(unlist(arms_out$elapsed)),
-	rejections = sum(arms_out$mu_rejects_hist)
+	rejections = sum(arms_out$mu_rejects)
 )
 
 # ----- VWS0 within Gibbs -----
@@ -124,18 +124,18 @@ control = control_unmatch(R = 3000, burn = 1000, thin = 1, report = 100,
 vws0_out = gibbs_unmatch(y, sigma, X, init, control)
 print(vws0_out)
 
-# plot(vws0_out$beta_hist[,1], type = "l")
-# plot(vws0_out$beta_hist[,2], type = "l")
-# plot(vws0_out$tau2_hist, type = "l")
+# plot(vws0_out$beta[,1], type = "l")
+# plot(vws0_out$beta[,2], type = "l")
+# plot(vws0_out$tau2, type = "l")
 
-ess_mu = ess(vws0_out$mu_hist)
+ess_mu = ess(vws0_out$mu)
 # hist(ess_mu)
 
-g = plot_rejects(vws0_out$mu_rejects_hist, burn = 0, tol = 1.0)
+g = plot_rejects(vws0_out$mu_rejects, burn = 0, tol = 1.0)
 ggsave("rejects-vws0.pdf", g, width = 3, height = 2)
 
 # i = which.min(ess_mu)
-# plot(vws0_out$mu_hist[,i], type = "l")
+# plot(vws0_out$mu[,i], type = "l")
 
 tbl_ess = tbl_ess %>% add_row(
 	method = "VWS0",
@@ -145,7 +145,7 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_mu, probs[2]),
 	ess3 = quantile(ess_mu, probs[3]),
 	elapsed = sum(unlist(vws0_out$elapsed)),
-	rejections = sum(vws0_out$mu_rejects_hist)
+	rejections = sum(vws0_out$mu_rejects)
 )
 
 # ----- VWS1 within Gibbs -----
@@ -164,25 +164,25 @@ for (l in seq_len(nrow(tol_levels)))
 	gibbs_out = gibbs_unmatch(y, sigma, X, init, control)
 	print(gibbs_out)
 
-	# plot(gibbs_out$beta_hist[,1], type = "l")
-	# plot(gibbs_out$beta_hist[,2], type = "l")
-	# plot(gibbs_out$tau2_hist, type = "l")
+	# plot(gibbs_out$beta[,1], type = "l")
+	# plot(gibbs_out$beta[,2], type = "l")
+	# plot(gibbs_out$tau2, type = "l")
 
-	ess_mu = ess(gibbs_out$mu_hist)
+	ess_mu = ess(gibbs_out$mu)
 	# hist(ess_mu)
 
 	# i = which.min(ess_mu)
-	# plot(gibbs_out$mu_hist[,i], type = "l")
+	# plot(gibbs_out$mu[,i], type = "l")
 
-	g = plot_tunes(gibbs_out$mu_tunes_hist, burn = 500, tol = 0.05)
+	g = plot_tunes(gibbs_out$mu_tunes, burn = 500, tol = 0.05)
 	ff = sprintf("tunes-vws1-%d.pdf", l)
 	ggsave(ff, g, width = 3, height = 2)
 
-	g = plot_comps(gibbs_out$mu_comps_hist, burn = 500, tol = 0.01)
+	g = plot_comps(gibbs_out$mu_comps, burn = 500, tol = 0.01)
 	ff = sprintf("comps-vws1-%d.pdf", l)
 	ggsave(ff, g, width = 3, height = 2)
 
-	g = plot_rejects(gibbs_out$mu_rejects_hist, burn = 500, tol = 0.05)
+	g = plot_rejects(gibbs_out$mu_rejects, burn = 500, tol = 0.05)
 	ff = sprintf("rejects-vws1-%d.pdf", l)
 	ggsave(ff, g, width = 3, height = 2)
 
@@ -194,7 +194,7 @@ for (l in seq_len(nrow(tol_levels)))
 		ess2 = quantile(ess_mu, probs[2]),
 		ess3 = quantile(ess_mu, probs[3]),
 		elapsed = sum(unlist(gibbs_out$elapsed)),
-		rejections = sum(gibbs_out$mu_rejects_hist)
+		rejections = sum(gibbs_out$mu_rejects)
 	)
 
 	vws1_out[[l]] = gibbs_out
@@ -216,11 +216,11 @@ for (l in seq_len(nrow(tol_levels)))
 	gibbs_out = gibbs_unmatch(y, sigma, X, init, control)
 	print(gibbs_out)
 
-	ess_mu = ess(gibbs_out$mu_hist)
+	ess_mu = ess(gibbs_out$mu)
 	# hist(ess_mu)
 
 	# i = which.min(ess_mu)
-	# plot(gibbs_out$mu_hist[,i], type = "l")
+	# plot(gibbs_out$mu[,i], type = "l")
 
 	tbl_ess = tbl_ess %>% add_row(
 		method = "VWS2",
@@ -230,7 +230,7 @@ for (l in seq_len(nrow(tol_levels)))
 		ess2 = quantile(ess_mu, probs[2]),
 		ess3 = quantile(ess_mu, probs[3]),
 		elapsed = sum(unlist(gibbs_out$elapsed)),
-		rejections = sum(gibbs_out$mu_rejects_hist)
+		rejections = sum(gibbs_out$mu_rejects)
 	)
 
 	vws2_out[[l]] = gibbs_out
@@ -240,10 +240,10 @@ save.image("results.Rdata")
 
 # ----- Additional Plots -----
 df_plot = data.frame(
-		imh = ess(imh_out$mu_hist),
-		arms = ess(arms_out$mu_hist),
-		amh = ess(amh_out$mu_hist),
-		vws = ess(vws1_out[[4]]$mu_hist)) %>%
+		imh = ess(imh_out$mu),
+		arms = ess(arms_out$mu),
+		amh = ess(amh_out$mu),
+		vws = ess(vws1_out[[4]]$mu)) %>%
 	mutate(iter = row_number())
 df_points = data.frame(x = c(500, 1000, 1500)) %>%
 	mutate(imh = ecdf(df_plot$imh)(x)) %>%
@@ -267,9 +267,9 @@ ggsave("mu-ess-ecdf.pdf", g, width = 4, height = 3)
 # Overlay trace plot for the VWS and IMH sigma2
 # Pick the 3 counties with worst IMH chains for sigma2
 # and 3 counties with worst VWS chains
-ess_imh = ess(imh_out$mu_hist)
+ess_imh = ess(imh_out$mu)
 ess_imh[is.na(ess_imh)] = 0
-ess_vws = ess(vws1_out[[4]]$mu_hist)
+ess_vws = ess(vws1_out[[4]]$mu)
 lowest_imh = order(ess_imh)[1:3]
 lowest_vws = order(ess_vws)[1:3]
 plot_ess = c(lowest_imh, lowest_vws)
@@ -278,46 +278,46 @@ for (ii in 1:length(plot_ess)) {
 	idx = plot_ess[ii]
 
 	g = data.frame(
-			imh = imh_out$mu_hist[,idx],
-			vws = vws1_out[[4]]$mu_hist[,idx]) %>%
+			imh = imh_out$mu[,idx],
+			vws = vws1_out[[4]]$mu[,idx]) %>%
 		mutate(x = row_number()) %>%
 		ggplot() +
 		geom_line(aes(x=x, y=vws), color = "red2", alpha = 0.4) +
 		geom_line(aes(x=x, y=imh), color = "blue", linewidth = 0.5, alpha = 1) +
 		xlab("") +
-		ylab(bquote(sigma[.(idx)]^2)) +
+		ylab(bquote(mu[.(idx)])) +
 		theme_light()
 	ff = sprintf("imh-trace-%d.pdf", ii)
 	ggsave(ff, g, width = 3, height = 2)
 }
 
 # Also look at the three worst mixing chains under AMH
-ess_amh = ess(amh_out$mu_hist)
+ess_amh = ess(amh_out$mu)
 lowest_amh = order(ess_amh)[1:3]
 for (ii in 1:length(lowest_amh)) {
 	idx = lowest_amh[ii]
-	g = data.frame(amh = amh_out$mu_hist[,idx]) %>%
+	g = data.frame(amh = amh_out$mu[,idx]) %>%
 		mutate(x = row_number()) %>%
 		ggplot() +
 		geom_line(aes(x=x, y=amh), linewidth = 0.5) +
 		xlab("") +
-		ylab(bquote(sigma[.(idx)]^2)) +
+		ylab(bquote(mu[.(idx)])) +
 		theme_light()
 	ff = sprintf("amh-trace-%d.pdf", ii)
 	ggsave(ff, g, width = 3, height = 2)
 }
 
 # Also look at the three worst mixing chains under ARMS
-ess_arms = ess(arms_out$mu_hist)
+ess_arms = ess(arms_out$mu)
 lowest_arms = order(ess_arms)[1:3]
 for (ii in 1:length(lowest_arms)) {
 	idx = lowest_arms[ii]
-	g = data.frame(arms = arms_out$mu_hist[,idx]) %>%
+	g = data.frame(arms = arms_out$mu[,idx]) %>%
 		mutate(x = row_number()) %>%
 		ggplot() +
 		geom_line(aes(x=x, y=arms), linewidth = 0.5) +
 		xlab("") +
-		ylab(bquote(sigma[.(idx)]^2)) +
+		ylab(bquote(mu[.(idx)])) +
 		theme_light()
 	ff = sprintf("arms-trace-%d.pdf", ii)
 	ggsave(ff, g, width = 3, height = 2)
@@ -327,7 +327,7 @@ for (ii in 1:length(lowest_arms)) {
 # the tuning period.
 tune = 100
 for (l in 1:nrow(tol_levels)) {
-	g = vws2_out[[l]]$mu_rejects_hist %>%
+	g = vws2_out[[l]]$mu_rejects%>%
 		tail(-tune) %>%
 		plot_rejects(burn = 0, tol = 100)
 	ff = sprintf("rejects-vws2-%d-tail.pdf", l)
