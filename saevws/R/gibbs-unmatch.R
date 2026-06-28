@@ -60,7 +60,7 @@ fixed_unmatch = function(beta = FALSE, tau2 = FALSE, mu = FALSE)
 #' @return A list with results.
 #'
 #' @examples
-#' init = init_unmatch(500, d1 = 5, d2 = 2)
+#' init = init_unmatch(m = 500, d = 5)
 #'
 #' @export
 init_unmatch = function(m, d, beta = NULL, tau2 = NULL, mu = NULL)

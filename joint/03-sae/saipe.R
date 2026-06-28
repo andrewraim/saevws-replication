@@ -100,7 +100,7 @@ tbl_ess = tibble(
 
 # ----- AMH within Gibbs -----
 inner_ctrl = control_inner(method = "amh", amh_varprop_init = 1)
-control = control_joint(R = 3000, burn = 1000, thin = 1, report = 1000,
+control = control_joint(R = 30000, burn = 28000, thin = 1, report = 1000,
 	inner = inner_ctrl, save_latent = seq_len(m))
 amh_out = gibbs_joint(y, s2, X, Z, df, init, control)
 print(amh_out)

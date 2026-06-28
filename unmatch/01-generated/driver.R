@@ -1,9 +1,9 @@
-library(tidyverse)
 library(saevws)
 library(mcmcse)
 library(xtable)
 library(coda)
 library(knitr)
+library(tidyverse)
 
 set.seed(1234)
 
@@ -58,8 +58,8 @@ tbl_ess = tibble(
 
 # ----- AMH within Gibbs -----
 init = init_unmatch(m, d = ncol(X))
-inner = control_inner(method = "am", amh_varprop_init = 25, amh_varprop_eps = 1e-4)
-control = control_unmatch(R = 10000, burn = 8000, thin = 1, report = 5000,
+inner = control_inner(method = "amh", amh_varprop_init = 25, amh_varprop_eps = 1e-4)
+control = control_unmatch(R = 30000, burn = 28000, thin = 1, report = 1000,
 	save_latent = 1:m, inner = inner)
 amh_out = gibbs_unmatch(y, sigma, X, init, control)
 print(amh_out)

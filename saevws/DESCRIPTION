@@ -19,6 +19,7 @@ LinkingTo:
 	vws
 Imports:
 	coda,
+	dplyr,
 	ggplot2,
 	mcmcse,
 	Rcpp,

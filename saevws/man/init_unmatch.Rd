@@ -24,6 +24,6 @@ A list with results.
 Gibbs Sampler Initial Values for Unmatched Model
 }
 \examples{
-init = init_unmatch(500, d1 = 5, d2 = 2)
+init = init_unmatch(m = 500, d = 5)
 
 }
