@@ -10,6 +10,8 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	const arma::mat& X, const arma::mat& Z, const arma::vec& df,
 	const Rcpp::List& init, const Rcpp::List& control, const Rcpp::List& fixed)
 {
+	unsigned long mem_start = rss_kb();
+
 	unsigned int m = y.n_elem;
 	unsigned int d1 = X.n_cols;
 	unsigned int d2 = Z.n_cols;
@@ -32,6 +34,8 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	unsigned int report = control["report"];
 	const arma::uvec& save_latent = control["save_latent"];
 	const Rcpp::List& inner_ctrl = control["inner"];
+	bool record_mem = control["record_mem"];
+
 	const Rcpp::String& inner_method = inner_ctrl["method"];
 	unsigned int max_rejects = inner_ctrl["max_rejects"];
 	double tol_suff = inner_ctrl["tol_suff"];
@@ -53,11 +57,13 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	arma::mat sigma2_hist(R_keep, save_latent.size());
 	arma::mat theta_hist(R_keep, save_latent.size());
 
+	arma::vec mem_hist(R);
 	arma::uvec sigma2_rejects_hist(R);
 	arma::uvec sigma2_comps_hist(R);
 	arma::uvec sigma2_tunes_hist(R);
 	arma::uvec sigma2_tuned_hist(R);
 	arma::uvec sigma2_rejects_areas(m);
+	mem_hist.fill(arma::datum::nan);
 	sigma2_tunes_hist.fill(0);
 	sigma2_tuned_hist.fill(0);
 	sigma2_rejects_areas.fill(0);
@@ -342,6 +348,11 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 		}
 		avg_sigma2_comps = sigma2_comps_hist(rep) / double(m);
 
+		// Save total memory usage in MB
+		if (record_mem) {
+			mem_hist(rep) = rss_kb() / 1024.0 - mem_start / 1024.0;
+		}
+
 		if (rep >= burn && rep % thin == 0) {
 			beta_hist.row(rep_keep) = beta.t();
 			gamma_hist.row(rep_keep) = gamma.t();
@@ -401,7 +412,9 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 		Rcpp::Named("sigma2_comps") = sigma2_comps_hist,
 		Rcpp::Named("sigma2_tunes") = sigma2_tunes_hist,
 		Rcpp::Named("sigma2_tuned") = sigma2_tuned_hist,
-		Rcpp::Named("m") = m
+		Rcpp::Named("mem") = mem_hist,
+		Rcpp::Named("m") = m,
+		Rcpp::Named("inner_method") = inner_method
 	);
 }
 

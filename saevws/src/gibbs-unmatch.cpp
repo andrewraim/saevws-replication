@@ -10,6 +10,8 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	const arma::mat& X, const Rcpp::List& init, const Rcpp::List& control,
 	const Rcpp::List& fixed)
 {
+	unsigned long mem_start = rss_kb();
+
 	unsigned int m = y.n_elem;
 	unsigned int d = X.n_cols;
 
@@ -25,6 +27,8 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	unsigned int report = control["report"];
 	const arma::uvec& save_latent = control["save_latent"];
 	const Rcpp::List& inner_ctrl = control["inner"];
+	bool record_mem = control["record_mem"];
+
 	const Rcpp::String& inner_method = inner_ctrl["method"];
 	unsigned int max_rejects = inner_ctrl["max_rejects"];
 	double tol_suff = inner_ctrl["tol_suff"];
@@ -43,12 +47,13 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	arma::vec tau2_hist(R_keep);
 	arma::mat mu_hist(R_keep, save_latent.size());
 
+	arma::vec mem_hist(R);
 	arma::uvec mu_rejects_hist(R);
 	arma::uvec mu_comps_hist(R);
 	arma::uvec mu_tunes_hist(R);
 	arma::uvec mu_tuned_hist(R);
 	arma::uvec mu_rejects_areas(m);
-	arma::vec mu_mem_hist(R);
+	mem_hist.fill(arma::datum::nan);
 	mu_tunes_hist.fill(0);
 	mu_tuned_hist.fill(0);
 	mu_rejects_areas.fill(0);
@@ -274,11 +279,11 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 		}
 		avg_mu_comps = mu_comps_hist(rep) / double(m);
 
-		// Save total memory usage for VWS proposals
-		mu_mem_hist(rep) = 0;
-		for (unsigned int i = 0; i < m; i++) {
-		 	mu_mem_hist(rep) += mem(proposals[i]);
+		// Save total memory usage in MB
+		if (record_mem) {
+			mem_hist(rep) = rss_kb() / 1024.0 - mem_start / 1024.0;
 		}
+
 
 		if (rep >= burn && rep % thin == 0) {
 			beta_hist.row(rep_keep) = beta.t();
@@ -331,8 +336,8 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 		Rcpp::Named("mu_comps") = mu_comps_hist,
 		Rcpp::Named("mu_tunes") = mu_tunes_hist,
 		Rcpp::Named("mu_tuned") = mu_tuned_hist,
-		Rcpp::Named("mu_mem") = mu_mem_hist,
-		Rcpp::Named("m") = m
+		Rcpp::Named("mem") = mem_hist,
+		Rcpp::Named("m") = m,
+		Rcpp::Named("inner_method") = inner_method
 	);
 }
-

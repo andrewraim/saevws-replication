@@ -10,6 +10,7 @@ control_unmatch(
   thin = 1,
   report = R + 1,
   save_latent = integer(0),
+  record_mem = FALSE,
   inner = control_inner()
 )
 }
@@ -28,6 +29,8 @@ observations whose latent draws will be saved (\eqn{\sigma^2} and
 \eqn{\vartheta}). Values should be 1-based, corresponding to a subset of
 \eqn{\{1, \ldots, m\}}. Default is an empty vector. Saving many observations
 over many draws can use a lot of memory.}
+
+\item{record_mem}{TBD}
 
 \item{inner}{An control object obtained from \link{control_inner}.}
 }

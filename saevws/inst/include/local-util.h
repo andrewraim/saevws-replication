@@ -4,10 +4,34 @@
 #include <RcppArmadillo.h>
 #include "vws.h"
 
-template <typename T, typename R>
-inline double mem(const vws::fmm_proposal<T,R>& h)
+/*
+* Get resident memory for the current process, for Linux-based systems. The
+* code was adapted from: <https://stackoverflow.com/a/14927379>
+*/
+inline size_t rss_kb()
 {
-	return sizeof(R) * h.size();
+#if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+	FILE* fp = NULL;
+	fp = fopen( "/proc/self/statm", "r" );
+
+	if (fp == NULL) {
+		Rcpp::stop("Could not get RSS");
+	}
+
+	long rss = 0L;
+	if (fscanf(fp, "%*s%ld", &rss) != 1)
+	{
+		fclose(fp);
+		Rcpp::stop("Could not get RSS");
+	}
+
+	fclose(fp);
+	size_t out = size_t(rss) * size_t(sysconf(_SC_PAGESIZE)) / 1024;
+	return out;
+#else
+	// In this case, just return a zero
+	return 0L;
+#endif
 }
 
 inline void stopifnot(bool cond, const char* fmt, ...)
@@ -28,8 +52,8 @@ inline void stopifnot(bool cond, const char* fmt, ...)
 inline void logger(const char* fmt, ...)
 {
 	// Get the current time in the local time zone
-    std::time_t raw = std::time(nullptr);
-    std::tm* local = std::localtime(&raw);
+	std::time_t raw = std::time(nullptr);
+	std::tm* local = std::localtime(&raw);
 
 	// Write formatted time to a string
 	char buffer[64];

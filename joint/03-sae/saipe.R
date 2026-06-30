@@ -95,7 +95,8 @@ tbl_ess = tibble(
 	ess2 = quantile(ess_sigma2, probs[2]),
 	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(imh_out$elapsed)),
-	rejections = sum(imh_out$sigma2_rejects)
+	rejections = sum(imh_out$sigma2_rejects),
+	mem = max(imh_out$mem)
 )
 
 # ----- AMH within Gibbs -----
@@ -126,7 +127,8 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_sigma2, probs[2]),
 	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(amh_out$elapsed)),
-	rejections = sum(amh_out$sigma2_rejects)
+	rejections = sum(amh_out$sigma2_rejects),
+	mem = max(amh_out$mem)
 )
 
 # ----- ARMS within Gibbs -----
@@ -158,7 +160,8 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_sigma2, probs[2]),
 	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(arms_out$elapsed)),
-	rejections = sum(arms_out$sigma2_rejects)
+	rejections = sum(arms_out$sigma2_rejects),
+	mem = max(arms_out$mem)
 )
 
 # ----- VWS0 within Gibbs -----
@@ -186,7 +189,8 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_sigma2, probs[2]),
 	ess3 = quantile(ess_sigma2, probs[3]),
 	elapsed = sum(unlist(vws0_out$elapsed)),
-	rejections = sum(vws0_out$sigma2_rejects)
+	rejections = sum(vws0_out$sigma2_rejects),
+	mem = max(vws0_out$mem)
 )
 
 # ----- VWS1 within Gibbs -----
@@ -245,7 +249,8 @@ for (l in seq_len(nrow(tol_levels)))
 		ess2 = quantile(ess_sigma2, probs[2]),
 		ess3 = quantile(ess_sigma2, probs[3]),
 		elapsed = sum(unlist(gibbs_out$elapsed)),
-		rejections = sum(gibbs_out$sigma2_rejects)
+		rejections = sum(gibbs_out$sigma2_rejects),
+		mem = max(gibbs_out$mem)
 	)
 
 	vws1_out[[l]] = gibbs_out
@@ -282,33 +287,11 @@ for (l in seq_len(nrow(tol_levels)))
 		ess2 = quantile(ess_sigma2, probs[2]),
 		ess3 = quantile(ess_sigma2, probs[3]),
 		elapsed = sum(unlist(gibbs_out$elapsed)),
-		rejections = sum(gibbs_out$sigma2_rejects)
+		rejections = sum(gibbs_out$sigma2_rejects),
+		mem = max(gibbs_out$mem)
 	)
 
 	vws2_out[[l]] = gibbs_out
-}
-
-# ----- VWS3 within Gibbs -----
-# Stop tuning after an initial period, then use proposal with MH algorithm
-# instead of rejection sampling. Seems interesting that this does not work
-# as well: it doesn't run much faster than version 2 and some of the sigma2
-# chains aren't mixing that well.
-
-if (FALSE) {
-	tol_suff = 0.25
-	tol_merge = 0.001
-
-	inner_ctrl = control_inner(tol_suff = tol_suff, tol_merge = tol_merge,
-		max_rejects = 1e6, method = "mh-vws", N = 50, tune = 400)
-	control = control_joint(R = 3000, burn = 1000, thin = 1, report = 100,
-		inner = inner_ctrl, save_latent = seq_len(m))
-	gibbs_out = gibbs_joint(y, s2, X, Z, df, init, control)
-	print(gibbs_out)
-
-	ess_sigma2 = ess(gibbs_out$sigma2)
-
-	i = which.min(ess_sigma2)
-	plot(gibbs_out$sigma2[,i], type = "l")
 }
 
 # ----- Fit Fay-Herriot with Gibbs sampler -----
@@ -616,6 +599,23 @@ tbl_theta_ess = res_theta_ess %>%
 	add_column(tol_merge) %>%
 	select(method, tol_suff, tol_merge, everything())
 kable(tbl_theta_ess, format = "latex", linesep = "")
+
+# Memory use measured between start and end of gibbs C++ sampler
+tribble(
+	~sampler, ~tol_suff, ~tol_merge, ~limited, ~mem,
+	imh_out$inner_method, NA, NA, NA, max(imh_out$mem),
+	amh_out$inner_method, NA, NA, NA, max(amh_out$mem),
+	arms_out$inner_method, NA, NA, NA, max(arms_out$mem),
+	vws0_out$inner_method, NA, NA, NA, max(vws0_out$mem),
+	vws1_out[[1]]$inner_method, tol_levels$tol_suff[1], tol_levels$tol_merge[1], FALSE, max(vws1_out[[1]]$mem),
+	vws1_out[[2]]$inner_method, tol_levels$tol_suff[2], tol_levels$tol_merge[2], FALSE, max(vws1_out[[2]]$mem),
+	vws1_out[[3]]$inner_method, tol_levels$tol_suff[3], tol_levels$tol_merge[3], FALSE, max(vws1_out[[3]]$mem),
+	vws1_out[[4]]$inner_method, tol_levels$tol_suff[4], tol_levels$tol_merge[4], FALSE, max(vws1_out[[4]]$mem),
+	vws2_out[[1]]$inner_method, tol_levels$tol_suff[1], tol_levels$tol_merge[1], TRUE, max(vws2_out[[1]]$mem),
+	vws2_out[[2]]$inner_method, tol_levels$tol_suff[2], tol_levels$tol_merge[2], TRUE, max(vws2_out[[2]]$mem),
+	vws2_out[[3]]$inner_method, tol_levels$tol_suff[3], tol_levels$tol_merge[3], TRUE, max(vws2_out[[3]]$mem),
+	vws2_out[[4]]$inner_method, tol_levels$tol_suff[4], tol_levels$tol_merge[4], TRUE, max(vws2_out[[4]]$mem),
+) %>% mutate(mem = mem / 1024)
 
 # ----- Experimental: Gelman-Rubin Diagnostic -----
 # Run three additional chains with IMH and then diagnose the four together.

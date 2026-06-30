@@ -53,7 +53,8 @@ tbl_ess = tibble(
 	ess2 = quantile(ess_mu, probs[2]),
 	ess3 = quantile(ess_mu, probs[3]),
 	elapsed = sum(unlist(imh_out$elapsed)),
-	rejections = sum(imh_out$mu_rejects)
+	rejections = sum(imh_out$mu_rejects),
+	mem = max(vws0_out$mem)
 )
 
 # ----- AMH within Gibbs -----
@@ -82,7 +83,8 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_mu, probs[2]),
 	ess3 = quantile(ess_mu, probs[3]),
 	elapsed = sum(unlist(amh_out$elapsed)),
-	rejections = sum(amh_out$mu_rejects)
+	rejections = sum(amh_out$mu_rejects),
+	mem = max(vws0_out$mem)
 )
 
 # ----- ARMS within Gibbs -----
@@ -111,7 +113,8 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_mu, probs[2]),
 	ess3 = quantile(ess_mu, probs[3]),
 	elapsed = sum(unlist(arms_out$elapsed)),
-	rejections = sum(arms_out$mu_rejects)
+	rejections = sum(arms_out$mu_rejects),
+	mem = max(vws0_out$mem)
 )
 
 # ----- VWS0 within Gibbs -----
@@ -143,7 +146,8 @@ tbl_ess = tbl_ess %>% add_row(
 	ess2 = quantile(ess_mu, probs[2]),
 	ess3 = quantile(ess_mu, probs[3]),
 	elapsed = sum(unlist(vws0_out$elapsed)),
-	rejections = sum(vws0_out$mu_rejects)
+	rejections = sum(vws0_out$mu_rejects),
+	mem = max(vws0_out$mem)
 )
 
 # ----- VWS1 within Gibbs -----
@@ -192,7 +196,8 @@ for (l in seq_len(nrow(tol_levels)))
 		ess2 = quantile(ess_mu, probs[2]),
 		ess3 = quantile(ess_mu, probs[3]),
 		elapsed = sum(unlist(gibbs_out$elapsed)),
-		rejections = sum(gibbs_out$mu_rejects)
+		rejections = sum(gibbs_out$mu_rejects),
+		mem = max(vws0_out$mem)
 	)
 
 	vws1_out[[l]] = gibbs_out
@@ -228,7 +233,8 @@ for (l in seq_len(nrow(tol_levels)))
 		ess2 = quantile(ess_mu, probs[2]),
 		ess3 = quantile(ess_mu, probs[3]),
 		elapsed = sum(unlist(gibbs_out$elapsed)),
-		rejections = sum(gibbs_out$mu_rejects)
+		rejections = sum(gibbs_out$mu_rejects),
+		mem = max(vws0_out$mem)
 	)
 
 	vws2_out[[l]] = gibbs_out

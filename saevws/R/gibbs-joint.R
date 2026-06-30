@@ -10,6 +10,7 @@
 #' \eqn{\vartheta}). Values should be 1-based, corresponding to a subset of
 #' \eqn{\{1, \ldots, m\}}. Default is an empty vector. Saving many observations
 #' over many draws can use a lot of memory.
+#' @param record_mem TBD
 #' @param inner An control object obtained from [control_inner].
 #'
 #' @return A list with results.
@@ -19,10 +20,10 @@
 #'
 #' @export
 control_joint = function(R = 1000, burn = 0, thin = 1, report = R+1,
-	save_latent = integer(0), inner = control_inner())
+	save_latent = integer(0), record_mem = FALSE, inner = control_inner())
 {
 	ret = list(R = R, burn = burn, thin = thin, report = report,
-		save_latent = save_latent, inner = inner)
+		save_latent = save_latent, record_mem = record_mem, inner = inner)
 	class(ret) = "control_joint"
 	return(ret)
 }
@@ -237,6 +238,8 @@ print.gibbs_joint = function(x, pr = c(0.05, 0.95), ...)
 
 	cat("----\n")
 	printf("sigma2 step\n")
+	printf("   Sampling Method: %s\n", x$inner_method)
+
 	printf("   Proposed: %d  Rejected: %d\n",
 		sum(x$sigma2_rejects) + x$R * x$m,
 		sum(x$sigma2_rejects))
@@ -254,4 +257,9 @@ print.gibbs_joint = function(x, pr = c(0.05, 0.95), ...)
 	tab = round(as.data.frame(x$elapsed), 4)
 	rownames(tab) = ""
 	print(tab)
+
+	peak_mem = max(x$mem)
+	if (!is.na(peak_mem)) {
+		printf("Peak memory usage (MB): %0.2f\n", peak_mem)
+	}
 }
