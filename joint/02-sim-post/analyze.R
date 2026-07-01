@@ -23,7 +23,7 @@ tbl_mwg = tbl |>
 		acfQ1 = NA_real_, acfQ2 = NA_real_, acfQ3 = NA_real_,
 		essNA = NA_real_, par_mess = NA_real_, theta_essQ1 = NA_real_,
 		theta_essQ2 = NA_real_, theta_essQ3 = NA_real_,
-		elapsed = NA_real_, rejections = NA_real_)
+		elapsed = NA_real_, rejects = NA_real_)
 
 tbl_vwg = tbl |>
 	select(-idx_m, -idx_tol1, -idx_tol2) |>
@@ -31,7 +31,7 @@ tbl_vwg = tbl |>
 		acfQ1 = NA_real_, acfQ2 = NA_real_, acfQ3 = NA_real_,
 		essNA = NA_real_, par_mess = NA_real_, theta_essQ1 = NA_real_,
 		theta_essQ2 = NA_real_, theta_essQ3 = NA_real_,
-		elapsed = NA_real_, rejections = NA_real_,
+		elapsed = NA_real_, rejects = NA_real_,
 		knot_updates_burn = NA_real_, knot_updates_keep = NA_real_)
 
 for (i in seq_len(nrow(tbl))) {
@@ -48,7 +48,7 @@ for (i in seq_len(nrow(tbl))) {
 	df_mwg = ff_mwg |> read_csv(show_col_types = FALSE)
 	x = df_mwg |>
 		select(essQ1, essQ2, essQ3, acfQ1, acfQ2, acfQ3, essNA, par_mess,
-			theta_essQ1, theta_essQ2, theta_essQ3, elapsed, rejections) |>
+			theta_essQ1, theta_essQ2, theta_essQ3, elapsed, rejects) |>
 		colMeans()
 	tbl_mwg$essQ1[i] = x["essQ1"]
 	tbl_mwg$essQ2[i] = x["essQ2"]
@@ -62,12 +62,12 @@ for (i in seq_len(nrow(tbl))) {
 	tbl_mwg$theta_essQ2[i] = x["theta_essQ2"]
 	tbl_mwg$theta_essQ3[i] = x["theta_essQ3"]
 	tbl_mwg$elapsed[i] = x["elapsed"]
-	tbl_mwg$rejections[i] = x["rejections"]
+	tbl_mwg$rejects[i] = x["rejects"]
 
 	df_vwg = ff_vwg |> read_csv(show_col_types = FALSE)
 	x = df_vwg |>
 		select(essQ1, essQ2, essQ3, acfQ1, acfQ2, acfQ3, essNA, par_mess,
-			theta_essQ1, theta_essQ2, theta_essQ3, elapsed, rejections,
+			theta_essQ1, theta_essQ2, theta_essQ3, elapsed, rejects,
 			knot_updates_burn, knot_updates_keep) |>
 		colMeans()
 	tbl_vwg$essQ1[i] = x["essQ1"]
@@ -82,7 +82,7 @@ for (i in seq_len(nrow(tbl))) {
 	tbl_vwg$theta_essQ2[i] = x["theta_essQ2"]
 	tbl_vwg$theta_essQ3[i] = x["theta_essQ3"]
 	tbl_vwg$elapsed[i] = x["elapsed"]
-	tbl_vwg$rejections[i] = x["rejections"]
+	tbl_vwg$rejects[i] = x["rejects"]
 	tbl_vwg$knot_updates_burn[i] = x["knot_updates_burn"]
 	tbl_vwg$knot_updates_keep[i] = x["knot_updates_keep"]
 }
@@ -94,7 +94,7 @@ dfmt = function(x, d = 0) formatC(x, format = "f", digits = d, big.mark = ",")
 tbl_mwg |>
 	group_by(m) |>
 	summarize(essQ1 = mean(essQ1), essQ2 = mean(essQ2), essQ3 = mean(essQ3),
-		elapsed = mean(elapsed), rejections = mean(rejections)) |>
+		elapsed = mean(elapsed), rejects = mean(rejects)) |>
 	mutate(m = dfmt(m)) |>
 	mutate(essQ1 = dfmt(essQ1)) |>
 	mutate(essQ2 = dfmt(essQ2)) |>
@@ -104,7 +104,7 @@ tbl_mwg |>
 	mutate(tol2 = NA) |>
 	mutate(knot_updates_burn = NA) |>
 	mutate(knot_updates_keep = NA) |>
-	select(m, tol1, tol2, essQ1, essQ2, essQ3, elapsed, rejections,
+	select(m, tol1, tol2, essQ1, essQ2, essQ3, elapsed, rejects,
 		knot_updates_burn, knot_updates_keep) |>
 	kable(booktabs = T, linesep = "")
 
@@ -114,10 +114,10 @@ tbl_vwg |>
 	mutate(essQ2 = dfmt(essQ2)) |>
 	mutate(essQ3 = dfmt(essQ3)) |>
 	mutate(elapsed = dfmt(elapsed, 2)) |>
-	mutate(rejections = dfmt(rejections)) |>
+	mutate(rejects = dfmt(rejects)) |>
 	mutate(knot_updates_burn = dfmt(knot_updates_burn)) |>
 	mutate(knot_updates_keep = dfmt(knot_updates_keep)) |>
-	select(m, tol1, tol2, essQ1, essQ2, essQ3, elapsed, rejections,
+	select(m, tol1, tol2, essQ1, essQ2, essQ3, elapsed, rejects,
 		knot_updates_burn, knot_updates_keep) |>
 	kable(booktabs = T, linesep = "")
 

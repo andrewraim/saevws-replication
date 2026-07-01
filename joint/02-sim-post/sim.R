@@ -65,7 +65,7 @@ if (file.exists(ff_mwg)) {
 	df_mwg = read_csv(ff_mwg, show_col_types = F)
 	stopifnot(nrow(df_mwg) == N_sim)
 	a = c("rep", "essQ1", "essQ2", "essQ3", "essNA", "par_mess", "theta_essQ1",
-		"theta_essQ2", "theta_essQ3", "elapsed", "rejections")
+		"theta_essQ2", "theta_essQ3", "elapsed", "rejects")
 	stopifnot(all(a %in% colnames(df_mwg)))
 } else {
 	df_mwg = data.frame(rep = seq_len(N_sim)) |>
@@ -81,14 +81,14 @@ if (file.exists(ff_mwg)) {
 		add_column(theta_essQ2 = NA) |>
 		add_column(theta_essQ3 = NA) |>
 		add_column(elapsed = NA) |>
-		add_column(rejections = NA)
+		add_column(rejects = NA)
 }
 
 if (file.exists(ff_vwg)) {
 	df_vwg = read_csv(ff_vwg, show_col_types = F)
 	stopifnot(nrow(df_vwg) == N_sim)
 	a = c("rep", "essQ1", "essQ2", "essQ3", "essNA", "par_mess", "theta_essQ1",
-		"theta_essQ2", "theta_essQ3", "elapsed", "rejections",
+		"theta_essQ2", "theta_essQ3", "elapsed", "rejects",
 		"knot_updates_burn", "knot_updates_keep")
 	stopifnot(all(a %in% colnames(df_vwg)))
 } else {
@@ -105,7 +105,7 @@ if (file.exists(ff_vwg)) {
 		add_column(theta_essQ2 = NA) |>
 		add_column(theta_essQ3 = NA) |>
 		add_column(elapsed = NA) |>
-		add_column(rejections = NA) |>
+		add_column(rejects = NA) |>
 		add_column(knot_updates_burn = NA) |>
 		add_column(knot_updates_keep = NA)
 }
@@ -121,7 +121,8 @@ if (!dir.exists("fits") && save_fits) { dir.create("fits") }
 
 # ----- Run the given level of the simulation -----
 
-for (s in setdiff(seq_len(N_sim), seq_len(last_rep))) {
+for (s in setdiff(seq_len(N_sim), seq_len(last_rep)))
+{
 	logger("Simulation rep %d\n", s)
 
 	# Generate data
@@ -173,10 +174,8 @@ for (s in setdiff(seq_len(N_sim), seq_len(last_rep))) {
 	df_mwg$theta_essQ1[s] = quantile(theta_ess0_out, probs[1], na.rm = TRUE)
 	df_mwg$theta_essQ2[s] = quantile(theta_ess0_out, probs[2], na.rm = TRUE)
 	df_mwg$theta_essQ3[s] = quantile(theta_ess0_out, probs[3], na.rm = TRUE)
-
-	df_mwg$rejections[s] = sum(gibbs0_out$sigma2_rejections)
+	df_mwg$rejects[s] = sum(gibbs0_out$sigma2_rejects)
 	df_mwg$elapsed[s] = sum(unlist(gibbs0_out$elapsed))
-
 	write_csv(df_mwg, file = ff_mwg)
 	gc()
 
@@ -220,8 +219,7 @@ for (s in setdiff(seq_len(N_sim), seq_len(last_rep))) {
 		df_vwg$theta_essQ1[s] = quantile(theta_ess1_out, probs[1], na.rm = TRUE)
 		df_vwg$theta_essQ2[s] = quantile(theta_ess1_out, probs[2], na.rm = TRUE)
 		df_vwg$theta_essQ3[s] = quantile(theta_ess1_out, probs[3], na.rm = TRUE)
-
-		df_vwg$rejections[s] = sum(gibbs1_out$sigma2_rejections)
+		df_vwg$rejects[s] = sum(gibbs1_out$sigma2_rejects)
 		df_vwg$elapsed[s] = sum(unlist(gibbs1_out$elapsed))
 
 		df_vwg$knot_updates_burn[s] =
