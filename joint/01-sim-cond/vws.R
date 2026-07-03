@@ -126,6 +126,11 @@ for (idx2 in seq_along(tol_merge_levels)) {
 			geom_line(data = df, aes(iter, x)) +
 			geom_point(data = df |> filter(row_number() %% 3 == 0),
 				aes(iter, x), pch = ltype)
+
+		# Print this to double check which series are which in the results
+		printf("kappa %0.0f  tau %0.1f  tol1 %0.2f  tol2 %0.3f  ltype %d  maxknots %d\n",
+			kappa, tau, tol_suff, tol_merge, ltype, max(df$x))
+
 	}
 	}
 
