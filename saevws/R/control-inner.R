@@ -7,7 +7,7 @@
 #' @param method Can be independent Metropolis step (`"imh"`), self-tuned VWS
 #' (`"vws-tune"`), basic VWS without self-tuning (`"vws-basic"`) for the
 #' \eqn{\sigma_i^2} draws, Adaptive Rejection Metropolis Sampling (`"arms"`),
-#' or Adaptive Metropolis (`"am"`).
+#' or Adaptive Metropolis (`"amh"`).
 #' @param N Maximum number of refinements for VWS without self-tuning.
 #' @param amh_varprop_init TBD
 #' @param amh_varprop_c TBD
@@ -22,7 +22,7 @@
 #' @export
 control_inner = function(tol_suff = 1e-2, tol_merge = exp(-100),
 	max_rejects = 1e6,
-	method = c("vws-tune", "vws-basic", "imh", "arms", "amh", "mh-vws"),
+	method = c("vws-tune", "vws-basic", "imh", "arms", "amh"),
 	N = 50, tune = 1e6, amh_varprop_init = 25,
 	amh_varprop_c = 2.4, amh_varprop_eps = 0.05)
 {

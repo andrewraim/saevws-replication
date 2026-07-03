@@ -3,12 +3,14 @@ title: |
   Self-Tuned Rejection Sampling within Gibbs and a Case Study in Small Area
   Estimation
 subtitle: Guide to Replication Materials
-author: Andrew M. Raim, Kyle M. Irimata, and James A. Livsey
+author: Andrew M. Raim$^*$, Kyle M. Irimata$^*$, and James A. Livsey$^\dagger$
 date: now
 date-format: "YYYY-MM-DD"
 thanks: |
+  $^*$Center for Statistical Research and Methodology, U.S. Census Bureau.
+  $^\dagger$Department of Biostatistics, University of Buffalo.
   `andrew.raim@census.gov, kyle.m.irimata@census.gov, jamesliv@buffalo.edu`.
-  Document compiled on `{r} format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")`.
+  Document compiled `{r} format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")`.
 format:
   pdf:
     fontsize: 10pt
@@ -39,10 +41,6 @@ bibliography: references.bib
 #| message: false
 set.seed(1234)
 library(saevws)
-printfn = function(x) {
-	cat(x, "=\n")
-	str(get(x), give.attr = FALSE, width = 80)
-}
 
 print_interface = function(x, ...)
 {
@@ -67,31 +65,51 @@ print_interface = function(x, ...)
 }
 ```
 
-# Introduction
+# Introduction {#sec-intro}
 
 This document describes replication materials for the article "Self-Tuned
 Rejection Sampling within Gibbs and a Case Study in Small Area Estimation". It
-includes an R package, code for two simulations, and a data analysis.
-The following folders are included in the materials.
+includes an R package, code for two simulations, and two data analysis.
 
-- `01-sim-cond`: simulation generating from a single conditional of the SAE
-  model under consideration.
-- `02-sim-post`: simulation generating from the posterior of the SAE model under
-  consideration.
-- `03-sae`: data analysis with the SAIPE dataset.
-- `data`: the SAIPE dataset and codes /inputs to assemble it.
-- `vws`: An R package that supports construction of VWS samplers.
-- `saevws`: an R package for the Gibbs sampler and supporting functions. It can
-  be configured with basic vertical weighted strips (VWS), self-tuned VWS,
-  and independent Metropolis-Hastings (IMH) for the
-  $\sigma_1^2, \ldots, \sigma_m^2$ steps.
+@sec-outline presents an outline of the contents of the repo. @sec-setup
+describes setup to run the replication materials. @sec-package gives an
+overview of the `saevws` package, including installation and basic usage.
+@sec-scripts lists the scripts used for the conditional simulation, posterior
+simulation, and data analysis. @sec-session gives a comprehensive list of
+packages and versions used in the computational studies, for reproducibility.
+@sec-amh provides from details about the adaptive Metropolis-Hastings algorithm
+used for comparison in the data analyses.
+
+# Outline {#sec-outline}
+
+Here is an outline of the contents of the `saevws-replication` repo.
+
+- `guide`: contains the present document and the source files used to generate
+  it.
+- `joint`: materials for the "Joint SAE model" based on @You-2021.
+	+ `00-test`: **TBD**
+	+ `01-sim-cond`: simulation generating from a single conditional of the SAE
+	  model under consideration.
+	+ `02-sim-post`: simulation generating from the posterior of the SAE model
+	  under consideration.
+	+ `03-sae`: data analysis with the SAIPE dataset.
+	+ `data`: the SAIPE dataset and codes / inputs to assemble it.
+	+ `shared`: defines R functions used in several seconds of 
+- `saevws`: an R package with the Gibbs samplers and supporting functions.
+  See @sec-package of the present document.
+- `unmatch`: materials for the "Unmatched SAE" model on @You-Rao-2002.
+	+ `00-provinces`: **TBD**
+	+ `01-generated`: analysis based on a generated dataset.
+	+ `data`: the dataset from @You-Rao-2002.
+
+**TBD:** consider moving the unused code and data out of this repo.
+
+# Setup {#sec-setup}
 
 A working installation of R [@Rcore2026] is required with the following
-packages (and their dependencies). These packages are available on CRAN at the
-time of this writing.
+packages (and their dependencies).
 
-- `devtools` [@devtools],
-- `fntl` [@fntl]
+- `coda` [@coda]
 - `jsonlite` [@jsonlite]
 - `knitr` [@knitr]
 - `mcmcse` [@mcmcse]
@@ -100,69 +118,90 @@ time of this writing.
 - `tidyverse` [@tidyverse],
 - `xtable` [@xtable]
 
-Additionally, the included `vws` package must be installed.
+The above packages are available on CRAN at the time of this writing.
+Additionally, development versions of the `fntl` [@fntl] and `vws` [@vws]
+packages are needed. Here we demonstrate installing them using the `pak`
+package [@pak].
 
 ```{r}
 #| eval: false
 #| prompt: true
-devtools::install_local("/path/to/vws")
+pak::pkg_install("andrewraim/fntl@v0.1.3-saevws")
+pak::pkg_install("andrewraim/vws@v0.3.1-saevws")
 ```
 
-@sec-package gives an overview of the `saevws` package, including installation and basic usage. @sec-scripts lists the scripts used for the conditional simulation, posterior simulation, and data analysis. @sec-session gives a comprehensive list of packages and versions used in the computational studies, for reproducibility.
+The `saevws` package included in the repo can now be installed. The following
+uses the `pak` package to accomplish this. (The placeholder `/path/to/` should
+be replaced with the actual path.)
+
+```{r}
+#| eval: false
+#| prompt: true
+pak::pkg_install("/path/to/saevws")
+```
 
 # `saevws` R Package {#sec-package}
 
-The `saevws` package can be installed using an R command like the following.
+The `saevws` package exports several functions for use in R. The primary
+functions are described here. See the associated manual page for each function
+for more information.
 
-```{r}
-#| eval: false
-#| prompt: true
-devtools::install_local("/path/to/saevws")
-```
+The following are for the Gibbs sampler in the Joint SAE example.
 
-**TBD: Needs update**
-The package exports several functions for use in R:
-
-- `gibbs_joint` invokes the Gibbs sampler.
-- `control_joint` constructs a control object with additional arguments for
-  the Gibbs sampler.
-- `get_vws_control` constructs a control object with additional arguments for
-  VWS within the Gibbs sampler.
-- `get_init` constructs an object with initial values for the Gibbs sampler.
-- `get_fixed` constructs an object to indicate that certain elements of the
-  MCMC chain are to remain fixed in the Gibbs sampler. This is primarily used
-  for testing the code.
-- `traceplots` is a utility to make trace plots from a matrix with draws.
-
-These functions' interfaces are shown below; see the associated manual pages
-for details about arguments, outputs, etc..
-
+::: {.callout-note appearance="minimal"}
 ```{r}
 #| echo: false
 print_interface(gibbs_joint)
 print_interface(control_joint)
 print_interface(init_joint)
 print_interface(fixed_joint)
+```
+:::
 
+The following are for the Gibbs sampler in the Unmatched SAE example.
+
+::: {.callout-note appearance="minimal"}
+```{r}
+#| echo: false
 print_interface(gibbs_unmatch)
 print_interface(control_unmatch)
 print_interface(init_unmatch)
 print_interface(fixed_unmatch)
-
-print_interface(control_inner)
-print_interface(traceplots)
 ```
+:::
 
-# Scripts {#sec-scripts}
+The following is used to specify the within-Gibbs sampling method in both
+examples.
 
-The following codes in `01-sim-cond` produce the conditional simulation study in Section 5.1 of the article.
+::: {.callout-note appearance="minimal"}
+```{r}
+#| echo: false
+print_interface(control_inner)
+```
+:::
+
+These functions are used for plotting.
+
+::: {.callout-note appearance="minimal"}
+```{r}
+#| echo: false
+print_interface(traceplots)
+print_interface(plot_comps)
+print_interface(plot_rejects)
+print_interface(plot_tunes)
+```
+:::
+
+# Scripts to Reproduce Results in the Article {#sec-scripts}
+
+The following codes in `joint/01-sim-cond` produce the conditional simulation study in Section 6.1 of the article.
 
 - `metro.R`: Simulations with IMH.
 - `vws.R`: Simulations with VWS.
 - `samplers.cpp`: C++ functions for samplers consisting of one IMH step and one
   VWS step.
 
-The following codes in `02-sim-post` produce the posterior simulation study in Section 5.2 of the article.
+The following codes in `joint/02-sim-post` produce the posterior simulation study in Section 6.2 of the article.
 
 - `gen.R`: Generate folder structure for the study. Each level of the study is
   placed into a separate folder.
@@ -170,10 +209,10 @@ The following codes in `02-sim-post` produce the posterior simulation study in S
 - `analyze.R`: Analyze the results from the completed study and produce 
   summaries.
 
-The `03-sae` folder contains a single script `saipe.R` that produces the data analysis in Section 6 of the article.
+The `joint/03-sae` folder contains a single script `saipe.R` for the analysis in Section 7 of the article.
 
-The `data` folder contains scripts and inputs to create the example SAIPE
-dataset.
+The `joint/data` folder contains the SAIPE dataset and scripts and inputs to
+construct it.
 
 - `saipe.csv`: the prepared dataset.
 - `cntysnap.csv`: Supplemental Nutrition Assistance Program (SNAP) data for
@@ -182,6 +221,14 @@ dataset.
   Bureau's Population Estimates Program. The data may be obtained from the
   Census Bureau [website][pep].
 - `build-data.R`: Code to construct the dataset `saipe.csv`.
+
+The `unmatch/01-generated` folder contains a single `unmatch.R` for the analysis in the supplement.
+
+The `unmatch/data` folder contains the (simulated) dataset for the Unmatched
+SAE model, along with scripts and inputs to construct it.
+
+- `build-data.R`: Code to construct the dataset `unmatch.csv`.
+- `unmatch.csv`: the prepared dataset.
 
 [pep]: https://www.census.gov/data/datasets/time-series/demo/popest/2020s-counties-total.html
 
@@ -194,24 +241,24 @@ packages and versions.
 #| eval: false
 #| message: false
 #| warning: false
-library(devtools)
-library(tidyverse)
-library(Rcpp)
+library(coda)
+library(jsonlite)
 library(knitr)
 library(mcmcse)
-library(jsonlite)
+library(Rcpp)
+library(statmod)
+library(tidyverse)
 library(xtable)
 library(vws)
-library(statmod)
 ```
 
 ```{r}
 sessionInfo()
 ```
 
-# Adaptive Metropolis-Hastings Algorithm {#sec-am}
+# Adaptive Metropolis-Hastings Algorithm {#sec-amh}
 
-An Adaptive Metropolis-Hastings (AMH) method is implemented in our studies for comparison. The particular variant ("SCAM") is from Section~3.1 of @Roberts-Rosenthal-2009 which is based on @Haario-Saksman-Tamminen-2005. The objective is to draw $\vec{X} = (X_1, \ldots, X_k)$ from target $\pi$. A chain $\vec{x}^{(r)}$, $r = 0, 1, 2, \ldots$, produced by an MCMC method can approximate such draws. Using a Metropolis-within-Gibbs approach to draw component $x_j$, an "optimal" proposal distribution for Metropolis sampling would be $X_j^* \sim \text{N}(x_j^{(r)}, (2.38)^2 \text{Var}_{\pi}(X_j))$. We can then accept $x_j^{(r+1)} = x_j^*$ with probability
+An Adaptive Metropolis-Hastings (AMH) method is implemented in our studies for comparison. The particular variant ("SCAM") is from Section 3.1 of @Roberts-Rosenthal-2009 which is based on @Haario-Saksman-Tamminen-2005. The objective is to draw $\vec{X} = (X_1, \ldots, X_k)$ from target $\pi$. A chain $\vec{x}^{(r)}$, $r = 0, 1, 2, \ldots$, produced by an MCMC method can approximate such draws. Using a Metropolis-within-Gibbs approach to draw component $x_j$, an "optimal" proposal distribution for Metropolis sampling would be $X_j^* \sim \text{N}\big( x_j^{(r)}, (2.38)^2 \cdot \text{Var}_{\pi}(X_j) \big)$. We can then accept $x_j^{(r+1)} = x_j^*$ with probability
 <!-- -->
 \begin{align*}
 \alpha(x_j^*, x_j^{(r)}, \vec{x}_{\setminus j}) =
@@ -270,7 +317,7 @@ and
 \end{cases}
 \end{align*}
 
-For the joint SAE application [@You2021], we use an exponential transformation to generate positive proposal values from the normal proposal distribution for $\sigma_i^2$. This results in the inclusion of a Jacobian term in the Metropolis ratio as follows. Let $\phi^*$ be a draw from proposal $\text{N}(\phi^{(r)}, v_i^{(r)})$ with $\phi^{(r)} = \log \sigma_i^{2{(r)}}$. The density with respect to $\phi^*$ (with proportionality constant omitted) can be obtained by transformation as
+For the joint SAE application [@You-2021], we use an exponential transformation to generate positive proposal values from the normal proposal distribution for $\sigma_i^2$. This results in the inclusion of a Jacobian term in the Metropolis ratio as follows. Let $\phi^*$ be a draw from proposal $\text{N}(\phi^{(r)}, v_i^{(r)})$ with $\phi^{(r)} = \log \sigma_i^{2{(r)}}$. The density with respect to $\phi^*$ (with proportionality constant omitted) can be obtained by transformation as
 <!-- -->
 \begin{align*}
 f(\exp(\phi^*) \mid \rest) &\propto
