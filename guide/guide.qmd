@@ -87,7 +87,6 @@ Here is an outline of the contents of the `saevws-replication` repo.
 - `guide`: contains the present document and the source files used to generate
   it.
 - `joint`: materials for the "Joint SAE model" based on @You-2021.
-	+ `00-test`: **TBD**
 	+ `01-sim-cond`: simulation generating from a single conditional of the SAE
 	  model under consideration.
 	+ `02-sim-post`: simulation generating from the posterior of the SAE model
@@ -98,9 +97,8 @@ Here is an outline of the contents of the `saevws-replication` repo.
 - `saevws`: an R package with the Gibbs samplers and supporting functions.
   See @sec-package of the present document.
 - `unmatch`: materials for the "Unmatched SAE" model on @You-Rao-2002.
-	+ `00-provinces`: **TBD**
 	+ `01-generated`: analysis based on a generated dataset.
-	+ `data`: the dataset from @You-Rao-2002.
+	+ `data`: a generated dataset based on a model in @You-Rao-2002.
 
 **TBD:** consider moving the unused code and data out of this repo.
 
@@ -196,10 +194,8 @@ print_interface(plot_tunes)
 
 The following codes in `joint/01-sim-cond` produce the conditional simulation study in Section 6.1 of the article.
 
-- `metro.R`: Simulations with IMH.
+- `imh.R`: Simulations with IMH.
 - `vws.R`: Simulations with VWS.
-- `samplers.cpp`: C++ functions for samplers consisting of one IMH step and one
-  VWS step.
 
 The following codes in `joint/02-sim-post` produce the posterior simulation study in Section 6.2 of the article.
 
