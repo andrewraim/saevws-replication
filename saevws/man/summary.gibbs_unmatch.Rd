@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-unmatch.R
 \name{summary.gibbs_unmatch}
 \alias{summary.gibbs_unmatch}
-\title{Gibbs Sampler Summary for Unmatched Model}
+\title{Gibbs Sampler Summary for Unmatched SAE Model}
 \usage{
 \method{summary}{gibbs_unmatch}(object, pr = c(0.05, 0.95), ...)
 }
@@ -17,5 +17,5 @@
 A data frame with results.
 }
 \description{
-Gibbs Sampler Summary for Unmatched Model
+Gibbs Sampler Summary for Unmatched SAE Model
 }

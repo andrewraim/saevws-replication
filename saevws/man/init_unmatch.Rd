@@ -2,14 +2,14 @@
 % Please edit documentation in R/gibbs-unmatch.R
 \name{init_unmatch}
 \alias{init_unmatch}
-\title{Gibbs Sampler Initial Values for Unmatched Model}
+\title{Gibbs Sampler Initial Values for Unmatched SAE Model}
 \usage{
 init_unmatch(m, d, beta = NULL, tau2 = NULL, mu = NULL)
 }
 \arguments{
 \item{m}{Number of subjects.}
 
-\item{d}{Dimension of \eqn{X} matrix.}
+\item{d}{Number of columns in \eqn{X} matrix.}
 
 \item{beta}{Initial value for \eqn{\beta}.}
 
@@ -18,10 +18,10 @@ init_unmatch(m, d, beta = NULL, tau2 = NULL, mu = NULL)
 \item{mu}{Initial value for \eqn{\mu}.}
 }
 \value{
-A list with results.
+A list with the settings.
 }
 \description{
-Gibbs Sampler Initial Values for Unmatched Model
+Gibbs Sampler Initial Values for Unmatched SAE Model
 }
 \examples{
 init = init_unmatch(m = 500, d = 5)

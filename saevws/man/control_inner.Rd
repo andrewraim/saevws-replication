@@ -21,31 +21,43 @@ control_inner(
 
 \item{tol_merge}{The tolerance \eqn{\epsilon_2}.}
 
-\item{max_rejects}{Maximum number of rejections allowed per \eqn{\sigma_i^2}
-conditional per Gibbs step. The sampler halts when this is exceeded.}
+\item{max_rejects}{Maximum number of rejections allowed per within-Gibbs
+step. The Gibbs sampler halts when this is exceeded.}
 
-\item{method}{Can be independent Metropolis step (\code{"imh"}), self-tuned VWS
-(\code{"vws-tune"}), basic VWS without self-tuning (\code{"vws-basic"}) for the
-\eqn{\sigma_i^2} draws, Adaptive Rejection Metropolis Sampling (\code{"arms"}),
-or Adaptive Metropolis (\code{"amh"}).}
+\item{method}{Can be IMH (\code{"imh"}), AMH (\code{"amh"}), self-tuned VWS
+(\code{"vws-tune"}), basic VWS without self-tuning (\code{"vws-basic"}), and
+AMRS (\code{"arms"}).}
 
-\item{N}{Maximum number of refinements for VWS without self-tuning.}
+\item{N}{Maximum number of refinements for a VWS proposal without self-tuning.}
 
-\item{tune}{TBD}
+\item{tune}{Maximum number of iterations in the Gibbs sampler to continue
+tuning for self-tuned VWS.}
 
-\item{amh_varprop_init}{TBD}
+\item{amh_varprop_init}{Initial value \eqn{v_j^{(0)}} of proposal variance
+for AMH.}
 
-\item{amh_varprop_c}{TBD}
+\item{amh_varprop_c}{Multiplier \eqn{s} for proposal variance in AMH. The
+default 2.4 is recommended by Roberts & Rosenthal (2009).}
 
-\item{amh_varprop_eps}{TBD}
+\item{amh_varprop_eps}{A value \eqn{\epsilon} to add to proposal variance
+for AMH to ensure positivity.}
 }
 \value{
-A list with results.
+A list with the settings.
 }
 \description{
-Gibbs Sampler Inner Control
+Parameters for within-Gibbs samplers: independent Metropolis-Hastings (IMH),
+Adaptive Metropolis-Hastings (AMH), vertical weighted strips (VWS) with
+and without self-tuning, and Adaptive Rejection Metropolis Sampling (ARMS).
+}
+\details{
+See the replication materials guide document for details about AMH.
 }
 \examples{
 ctrl = control_inner()
 
+}
+\references{
+Roberts, Gareth O., and Jeffrey S. Rosenthal. 2009. Examples of Adaptive
+MCMC. Journal of Computational and Graphical Statistics 18 (2): 349-67.
 }

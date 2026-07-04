@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-joint.R
 \name{control_joint}
 \alias{control_joint}
-\title{Control for Joint Model Gibbs Sampler}
+\title{Control for Joint SAE Model Gibbs Sampler}
 \usage{
 control_joint(
   R = 1000,
@@ -30,15 +30,17 @@ observations whose latent draws will be saved (\eqn{\sigma^2} and
 \eqn{\{1, \ldots, m\}}. Default is an empty vector. Saving many observations
 over many draws can use a lot of memory.}
 
-\item{record_mem}{TBD}
+\item{record_mem}{logical; if \code{TRUE}, keep track of memory use after each
+Gibbs iteration. This measures Virtual Memory Resident Set Size (VmRSS) for
+the current process and only has an effect in Linux.}
 
 \item{inner}{An control object obtained from \link{control_inner}.}
 }
 \value{
-A list with results.
+A list with the settings
 }
 \description{
-Control for Joint Model Gibbs Sampler
+Control for Joint SAE Model Gibbs Sampler
 }
 \examples{
 ctrl = control_joint()

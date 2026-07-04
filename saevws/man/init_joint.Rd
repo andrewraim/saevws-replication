@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-joint.R
 \name{init_joint}
 \alias{init_joint}
-\title{Gibbs Sampler Initial Values for Joint Model}
+\title{Gibbs Sampler Initial Values for Joint SAE Model}
 \usage{
 init_joint(
   m,
@@ -19,9 +19,9 @@ init_joint(
 \arguments{
 \item{m}{Number of subjects.}
 
-\item{d1}{Dimension of \eqn{X} matrix.}
+\item{d1}{Number of columns in \eqn{X} matrix.}
 
-\item{d2}{Dimension of \eqn{Z} matrix.}
+\item{d2}{Number of columns in \eqn{Z} matrix.}
 
 \item{beta}{Initial value for \eqn{\beta}.}
 
@@ -36,10 +36,10 @@ init_joint(
 \item{theta}{Initial value for \eqn{\vartheta^2}.}
 }
 \value{
-A list with results.
+A list with the settings
 }
 \description{
-Gibbs Sampler Initial Values for Joint Model
+Gibbs Sampler Initial Values for Joint SAE Model
 }
 \examples{
 init = init_joint(500, d1 = 5, d2 = 2)

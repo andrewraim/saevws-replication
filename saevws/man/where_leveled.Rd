@@ -38,3 +38,22 @@ Now suppose \code{x} expected to decrease dramatically and then level off. Let
 \code{x0} be the maximum value of \code{x} that occurs after index \code{burn}. Return the
 first index of \code{x} whose value is smaller than \verb{(1 + tol) * x0)}.
 }
+\examples{
+set.seed(1234)
+
+# Generate a series with that decreases to a stable value, with variability
+n = 1000
+iter = 1:n
+x = exp(-(iter - 10) / 10) + rnorm(n, 0, 0.05)
+
+# idx1 gives an index where the series has mostly descended to stability.
+# idx2 gives an earlier index.
+idx1 = where_leveled(x, burn = 200, tol = 0.01, increasing = FALSE)
+idx2 = where_leveled(x, burn = 200, tol = 10, increasing = FALSE)
+
+plot(x, type = "l")
+abline(v = idx1, lty = 2, col = "red")
+abline(v = idx2, lty = 2, col = "red")
+
+
+}

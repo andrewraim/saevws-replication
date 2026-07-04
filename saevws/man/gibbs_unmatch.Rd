@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-unmatch.R
 \name{gibbs_unmatch}
 \alias{gibbs_unmatch}
-\title{Gibbs Sampler for Unmatched Model}
+\title{Gibbs Sampler for Unmatched SAE Model}
 \usage{
 gibbs_unmatch(
   y,
@@ -34,25 +34,24 @@ Run the Gibbs sampler.
 }
 \examples{
 \dontrun{
-# Simulate data
 set.seed(1234)
 
+# Simulate data
 m = 500
-tau_true = sqrt(0.25)
-phi_true = sqrt(0.2)
-beta_true = c(1.5, 0.85)
-gamma_true = c(2.6, -1)
-df = rchisq(m, 16)
-X = cbind(1, rnorm(m, 8, 2))
-Z = cbind(1, rnorm(m, 7, 1.25))
+X = cbind(1, rnorm(m))
+sigma2 = rgamma(m, 1.25, 1/20)
+sigma = sqrt(sigma2)
 
-sigma2_true = rlnorm(m, Z \%*\% gamma_true, tau_true)
-theta_true = rnorm(m, X \%*\% beta_true, phi_true)
-s2 = sigma2_true / df * rchisq(m, df)
-y = rnorm(m, theta_true, sqrt(s2))
+beta_true = c(1, -1)
+Xbeta_true = X \%*\% beta_true
+tau_true = 1.25
+mu_true = rlnorm(m, Xbeta_true, tau_true)
+y = rnorm(m, mu_true, sigma)
 
-ctrl = control_joint(R = 100, report = 20)
-gibbs_out = gibbs_joint(y, s2, X, Z, df, control = ctrl)
+inner = control_inner(tol_suff = 0.90, tol_merge = 0.01, tune = 50)
+ctrl = control_unmatch(R = 100, report = 20)
+out = gibbs_unmatch(y, sigma, X, control = ctrl)
+plot(out$tau2, type = "l")
 }
 
 }

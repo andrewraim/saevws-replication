@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-joint.R
 \name{fixed_joint}
 \alias{fixed_joint}
-\title{Gibbs Sampler Fixed Components for Joint Model}
+\title{Gibbs Sampler Fixed Components for Joint SAE Model}
 \usage{
 fixed_joint(
   beta = FALSE,
@@ -14,29 +14,23 @@ fixed_joint(
 )
 }
 \arguments{
-\item{beta}{logical; if \code{TRUE}, Gibbs sampler will leave \eqn{\beta} fixed
-in MCMC.}
+\item{beta}{logical; if \code{TRUE}, sampler will leave \eqn{\beta} fixed.}
 
-\item{gamma}{logical; if \code{TRUE}, Gibbs sampler will leave \eqn{\gamma} fixed
-in MCMC.}
+\item{gamma}{logical; if \code{TRUE}, sampler will leave \eqn{\gamma} fixed.}
 
-\item{phi2}{logical; if \code{TRUE}, Gibbs sampler will leave \eqn{\phi^2} fixed
-in MCMC.}
+\item{phi2}{logical; if \code{TRUE}, sampler will leave \eqn{\phi^2} fixed.}
 
-\item{tau2}{logical; if \code{TRUE}, Gibbs sampler will leave \eqn{\tau^2} fixed
-in MCMC.}
+\item{tau2}{logical; if \code{TRUE}, sampler will leave \eqn{\tau^2} fixed.}
 
-\item{sigma2}{logical; if \code{TRUE}, Gibbs sampler will leave \eqn{\sigma^2}
-fixed in MCMC.}
+\item{sigma2}{logical; if \code{TRUE}, sampler will leave \eqn{\sigma^2} fixed.}
 
-\item{theta}{logical; if \code{TRUE}, Gibbs sampler will leave \eqn{\vartheta}
-fixed in MCMC.}
+\item{theta}{logical; if \code{TRUE}, sampler will leave \eqn{\vartheta} fixed.}
 }
 \value{
-A list with results.
+A list with the settings
 }
 \description{
-Gibbs Sampler Fixed Components for Joint Model
+Gibbs Sampler Fixed Components for Joint SAE Model
 }
 \examples{
 fixed = fixed_joint()

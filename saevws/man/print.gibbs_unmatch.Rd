@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-unmatch.R
 \name{print.gibbs_unmatch}
 \alias{print.gibbs_unmatch}
-\title{Gibbs Sampler Print Summary for Unmatched Model}
+\title{Gibbs Sampler Print Summary for Unmatched SAE Model}
 \usage{
 \method{print}{gibbs_unmatch}(x, pr = c(0.05, 0.95), ...)
 }
@@ -14,5 +14,5 @@
 \item{...}{Additional arguments.}
 }
 \description{
-Gibbs Sampler Print Summary for Unmatched Model
+Gibbs Sampler Print Summary for Unmatched SAE Model
 }

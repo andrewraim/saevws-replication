@@ -1,4 +1,4 @@
-#' Control for Joint Model Gibbs Sampler
+#' Control for Joint SAE Model Gibbs Sampler
 #'
 #' @param R Desired length of MCMC chain.
 #' @param burn Number of draws to burn.
@@ -10,10 +10,12 @@
 #' \eqn{\vartheta}). Values should be 1-based, corresponding to a subset of
 #' \eqn{\{1, \ldots, m\}}. Default is an empty vector. Saving many observations
 #' over many draws can use a lot of memory.
-#' @param record_mem TBD
+#' @param record_mem logical; if `TRUE`, keep track of memory use after each
+#' Gibbs iteration. This measures Virtual Memory Resident Set Size (VmRSS) for
+#' the current process and only has an effect in Linux.
 #' @param inner An control object obtained from [control_inner].
 #'
-#' @return A list with results.
+#' @return A list with the settings
 #'
 #' @examples
 #' ctrl = control_joint()
@@ -28,22 +30,16 @@ control_joint = function(R = 1000, burn = 0, thin = 1, report = R+1,
 	return(ret)
 }
 
-#' Gibbs Sampler Fixed Components for Joint Model
+#' Gibbs Sampler Fixed Components for Joint SAE Model
 #'
-#' @param beta logical; if `TRUE`, Gibbs sampler will leave \eqn{\beta} fixed
-#' in MCMC.
-#' @param gamma logical; if `TRUE`, Gibbs sampler will leave \eqn{\gamma} fixed
-#' in MCMC.
-#' @param phi2 logical; if `TRUE`, Gibbs sampler will leave \eqn{\phi^2} fixed
-#' in MCMC.
-#' @param tau2 logical; if `TRUE`, Gibbs sampler will leave \eqn{\tau^2} fixed
-#' in MCMC.
-#' @param sigma2 logical; if `TRUE`, Gibbs sampler will leave \eqn{\sigma^2}
-#' fixed in MCMC.
-#' @param theta logical; if `TRUE`, Gibbs sampler will leave \eqn{\vartheta}
-#' fixed in MCMC.
+#' @param beta logical; if `TRUE`, sampler will leave \eqn{\beta} fixed.
+#' @param gamma logical; if `TRUE`, sampler will leave \eqn{\gamma} fixed.
+#' @param phi2 logical; if `TRUE`, sampler will leave \eqn{\phi^2} fixed.
+#' @param tau2 logical; if `TRUE`, sampler will leave \eqn{\tau^2} fixed.
+#' @param sigma2 logical; if `TRUE`, sampler will leave \eqn{\sigma^2} fixed.
+#' @param theta logical; if `TRUE`, sampler will leave \eqn{\vartheta} fixed.
 #'
-#' @return A list with results.
+#' @return A list with the settings
 #'
 #' @examples
 #' fixed = fixed_joint()
@@ -58,11 +54,11 @@ fixed_joint = function(beta = FALSE, gamma = FALSE, phi2 = FALSE, tau2 = FALSE,
 	return(ret)
 }
 
-#' Gibbs Sampler Initial Values for Joint Model
+#' Gibbs Sampler Initial Values for Joint SAE Model
 #'
 #' @param m Number of subjects.
-#' @param d1 Dimension of \eqn{X} matrix.
-#' @param d2 Dimension of \eqn{Z} matrix.
+#' @param d1 Number of columns in \eqn{X} matrix.
+#' @param d2 Number of columns in \eqn{Z} matrix.
 #' @param beta Initial value for \eqn{\beta}.
 #' @param gamma Initial value for \eqn{\gamma}.
 #' @param phi2 Initial value for \eqn{\phi^2}.
@@ -70,7 +66,7 @@ fixed_joint = function(beta = FALSE, gamma = FALSE, phi2 = FALSE, tau2 = FALSE,
 #' @param sigma2 Initial value for \eqn{\sigma^2}.
 #' @param theta Initial value for \eqn{\vartheta^2}.
 #'
-#' @return A list with results.
+#' @return A list with the settings
 #'
 #' @examples
 #' init = init_joint(500, d1 = 5, d2 = 2)
@@ -99,7 +95,7 @@ init_joint = function(m, d1, d2, beta = NULL, gamma = NULL, phi2 = NULL,
 	return(ret)
 }
 
-#' Gibbs Sampler for Joint Model
+#' Gibbs Sampler for Joint SAE Model
 #'
 #' Run the Gibbs sampler.
 #'
@@ -116,9 +112,9 @@ init_joint = function(m, d1, d2, beta = NULL, gamma = NULL, phi2 = NULL,
 #'
 #' @examples
 #' \dontrun{
-#' # Simulate data
 #' set.seed(1234)
 #'
+#' # Simulate data
 #' m = 500
 #' tau_true = sqrt(0.25)
 #' phi_true = sqrt(0.2)
@@ -133,8 +129,10 @@ init_joint = function(m, d1, d2, beta = NULL, gamma = NULL, phi2 = NULL,
 #' s2 = sigma2_true / df * rchisq(m, df)
 #' y = rnorm(m, theta_true, sqrt(s2))
 #'
-#' ctrl = control_joint(R = 100, report = 20)
-#' gibbs_out = gibbs_joint(y, s2, X, Z, df, control = ctrl)
+#' inner = control_inner(tol_suff = 0.90, tol_merge = 0.01, tune = 50)
+#' ctrl = control_joint(R = 100, report = 20, inner = inner)
+#' out = gibbs_joint(y, s2, X, Z, df, control = ctrl)
+#' plot(out$tau2[,1], type = "l")
 #' }
 #'
 #' @export

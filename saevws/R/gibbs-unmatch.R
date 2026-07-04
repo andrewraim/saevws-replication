@@ -1,4 +1,4 @@
-#' Control for Unmatched Model Gibbs Sampler
+#' Control for Unmatched SAE Model Gibbs Sampler
 #'
 #' @param R Desired length of MCMC chain.
 #' @param burn Number of draws to burn.
@@ -6,14 +6,16 @@
 #' @param report Determines how often progress of the sampler is
 #' reported.
 #' @param save_latent integer vector; specify indices of the \eqn{m}
-#' observations whose latent draws will be saved (\eqn{\sigma^2} and
+#' observations whose latent draws will be saved (\eqn{\mu} and
 #' \eqn{\vartheta}). Values should be 1-based, corresponding to a subset of
 #' \eqn{\{1, \ldots, m\}}. Default is an empty vector. Saving many observations
 #' over many draws can use a lot of memory.
-#' @param record_mem TBD
+#' @param record_mem logical; if `TRUE`, keep track of memory use after each
+#' Gibbs iteration. This measures Virtual Memory Resident Set Size (VmRSS) for
+#' the current process and only has an effect in Linux.
 #' @param inner An control object obtained from [control_inner].
 #'
-#' @return A list with results.
+#' @return A list with the settings
 #'
 #' @examples
 #' ctrl = control_unmatch()
@@ -28,16 +30,13 @@ control_unmatch = function(R = 1000, burn = 0, thin = 1, report = R+1,
 	return(ret)
 }
 
-#' Gibbs Sampler Fixed Components for Unmatched Model
+#' Gibbs Sampler Fixed Components for Unmatched SAE Model
 #'
-#' @param beta logical; if `TRUE`, Gibbs sampler will leave \eqn{\beta} fixed
-#' in MCMC.
-#' @param tau2 logical; if `TRUE`, Gibbs sampler will leave \eqn{\tau^2} fixed
-#' in MCMC.
-#' @param mu logical; if `TRUE`, Gibbs sampler will leave \eqn{\mu}
-#' fixed in MCMC.
+#' @param beta logical; if `TRUE`, sampler will leave \eqn{\beta} fixed
+#' @param tau2 logical; if `TRUE`, sampler will leave \eqn{\tau^2} fixed.
+#' @param mu logical; if `TRUE`, sampler will leave \eqn{\mu} fixed.
 #'
-#' @return A list with results.
+#' @return A list with the settings
 #'
 #' @examples
 #' fixed = fixed_unmatch()
@@ -50,15 +49,15 @@ fixed_unmatch = function(beta = FALSE, tau2 = FALSE, mu = FALSE)
 	return(ret)
 }
 
-#' Gibbs Sampler Initial Values for Unmatched Model
+#' Gibbs Sampler Initial Values for Unmatched SAE Model
 #'
 #' @param m Number of subjects.
-#' @param d Dimension of \eqn{X} matrix.
+#' @param d Number of columns in \eqn{X} matrix.
 #' @param beta Initial value for \eqn{\beta}.
 #' @param tau2 Initial value for \eqn{\tau^2}.
 #' @param mu Initial value for \eqn{\mu}.
 #'
-#' @return A list with results.
+#' @return A list with the settings.
 #'
 #' @examples
 #' init = init_unmatch(m = 500, d = 5)
@@ -79,7 +78,7 @@ init_unmatch = function(m, d, beta = NULL, tau2 = NULL, mu = NULL)
 	return(ret)
 }
 
-#' Gibbs Sampler for Unmatched Model
+#' Gibbs Sampler for Unmatched SAE Model
 #'
 #' Run the Gibbs sampler.
 #'
@@ -94,25 +93,24 @@ init_unmatch = function(m, d, beta = NULL, tau2 = NULL, mu = NULL)
 #'
 #' @examples
 #' \dontrun{
-#' # Simulate data
 #' set.seed(1234)
 #'
+#' # Simulate data
 #' m = 500
-#' tau_true = sqrt(0.25)
-#' phi_true = sqrt(0.2)
-#' beta_true = c(1.5, 0.85)
-#' gamma_true = c(2.6, -1)
-#' df = rchisq(m, 16)
-#' X = cbind(1, rnorm(m, 8, 2))
-#' Z = cbind(1, rnorm(m, 7, 1.25))
+#' X = cbind(1, rnorm(m))
+#' sigma2 = rgamma(m, 1.25, 1/20)
+#' sigma = sqrt(sigma2)
 #'
-#' sigma2_true = rlnorm(m, Z %*% gamma_true, tau_true)
-#' theta_true = rnorm(m, X %*% beta_true, phi_true)
-#' s2 = sigma2_true / df * rchisq(m, df)
-#' y = rnorm(m, theta_true, sqrt(s2))
+#' beta_true = c(1, -1)
+#' Xbeta_true = X %*% beta_true
+#' tau_true = 1.25
+#' mu_true = rlnorm(m, Xbeta_true, tau_true)
+#' y = rnorm(m, mu_true, sigma)
 #'
-#' ctrl = control_joint(R = 100, report = 20)
-#' gibbs_out = gibbs_joint(y, s2, X, Z, df, control = ctrl)
+#' inner = control_inner(tol_suff = 0.90, tol_merge = 0.01, tune = 50)
+#' ctrl = control_unmatch(R = 100, report = 20)
+#' out = gibbs_unmatch(y, sigma, X, control = ctrl)
+#' plot(out$tau2, type = "l")
 #' }
 #'
 #' @export
@@ -138,7 +136,7 @@ gibbs_unmatch = function(y, sigma, X,
 	return(out)
 }
 
-#' Gibbs Sampler Summary for Unmatched Model
+#' Gibbs Sampler Summary for Unmatched SAE Model
 #'
 #' @param object A result from [gibbs_unmatch].
 #' @param pr Vector of quantiles to present in summary.
@@ -179,7 +177,7 @@ summary.gibbs_unmatch = function(object, pr = c(0.05, 0.95), ...)
 	return(df)
 }
 
-#' Gibbs Sampler Print Summary for Unmatched Model
+#' Gibbs Sampler Print Summary for Unmatched SAE Model
 #'
 #' @param x A result from [gibbs_unmatch].
 #' @param pr Vector of quantiles to present in summary.

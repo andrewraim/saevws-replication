@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-joint.R
 \name{gibbs_joint}
 \alias{gibbs_joint}
-\title{Gibbs Sampler for Joint Model}
+\title{Gibbs Sampler for Joint SAE Model}
 \usage{
 gibbs_joint(
   y,
@@ -40,9 +40,9 @@ Run the Gibbs sampler.
 }
 \examples{
 \dontrun{
-# Simulate data
 set.seed(1234)
 
+# Simulate data
 m = 500
 tau_true = sqrt(0.25)
 phi_true = sqrt(0.2)
@@ -57,8 +57,10 @@ theta_true = rnorm(m, X \%*\% beta_true, phi_true)
 s2 = sigma2_true / df * rchisq(m, df)
 y = rnorm(m, theta_true, sqrt(s2))
 
-ctrl = control_joint(R = 100, report = 20)
-gibbs_out = gibbs_joint(y, s2, X, Z, df, control = ctrl)
+inner = control_inner(tol_suff = 0.90, tol_merge = 0.01, tune = 50)
+ctrl = control_joint(R = 100, report = 20, inner = inner)
+out = gibbs_joint(y, s2, X, Z, df, control = ctrl)
+plot(out$tau2[,1], type = "l")
 }
 
 }

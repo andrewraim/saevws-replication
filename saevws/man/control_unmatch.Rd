@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-unmatch.R
 \name{control_unmatch}
 \alias{control_unmatch}
-\title{Control for Unmatched Model Gibbs Sampler}
+\title{Control for Unmatched SAE Model Gibbs Sampler}
 \usage{
 control_unmatch(
   R = 1000,
@@ -25,20 +25,22 @@ control_unmatch(
 reported.}
 
 \item{save_latent}{integer vector; specify indices of the \eqn{m}
-observations whose latent draws will be saved (\eqn{\sigma^2} and
+observations whose latent draws will be saved (\eqn{\mu} and
 \eqn{\vartheta}). Values should be 1-based, corresponding to a subset of
 \eqn{\{1, \ldots, m\}}. Default is an empty vector. Saving many observations
 over many draws can use a lot of memory.}
 
-\item{record_mem}{TBD}
+\item{record_mem}{logical; if \code{TRUE}, keep track of memory use after each
+Gibbs iteration. This measures Virtual Memory Resident Set Size (VmRSS) for
+the current process and only has an effect in Linux.}
 
 \item{inner}{An control object obtained from \link{control_inner}.}
 }
 \value{
-A list with results.
+A list with the settings
 }
 \description{
-Control for Unmatched Model Gibbs Sampler
+Control for Unmatched SAE Model Gibbs Sampler
 }
 \examples{
 ctrl = control_unmatch()

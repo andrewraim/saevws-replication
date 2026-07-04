@@ -2,16 +2,16 @@
 % Please edit documentation in R/geweke.R
 \name{geweke}
 \alias{geweke}
-\title{Geweke diagnostic}
+\title{Geweke Diagnostic}
 \usage{
 geweke(x, frac1 = 0.1, frac2 = 0.5, na.rm = TRUE)
 }
 \arguments{
-\item{x}{TBD}
+\item{x}{Vector representing a series of draws}
 
-\item{frac1}{TBD}
+\item{frac1}{Proportion of draws to consider as the head of the sequence.}
 
-\item{frac2}{TBD}
+\item{frac2}{Proportion of draws to consider as the tail of the sequence.}
 
 \item{na.rm}{logical; if \code{TRUE}, replace \code{NA} with \code{-Inf}.}
 }

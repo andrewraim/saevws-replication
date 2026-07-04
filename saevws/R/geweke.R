@@ -1,14 +1,15 @@
-#' Geweke diagnostic
+#' Geweke Diagnostic
 #'
 #' Compute the Geweke diagnostic with the coda package and (optionally) replace
 #' `NA` values with `-Inf`.
 #'
-#' @param x TBD
-#' @param frac1 TBD
-#' @param frac2 TBD
+#' @param x Vector representing a series of draws
+#' @param frac1 Proportion of draws to consider as the head of the sequence.
+#' @param frac2 Proportion of draws to consider as the tail of the sequence.
 #' @param na.rm logical; if `TRUE`, replace `NA` with `-Inf`.
 #'
 #' @returns A vector of Geweke z-values
+#'
 #' @export
 geweke = function(x, frac1 = 0.1, frac2 = 0.5, na.rm = TRUE)
 {
