@@ -9,7 +9,7 @@ date-format: "YYYY-MM-DD"
 thanks: |
   $^*$Center for Statistical Research and Methodology, U.S. Census Bureau.
   $^\dagger$Department of Biostatistics, University of Buffalo.
-  `andrew.raim@census.gov, kyle.m.irimata@census.gov, jamesliv@buffalo.edu`.
+  `andrew.raim@census.gov`, `kyle.m.irimata@census.gov`, `jamesliv@buffalo.edu`.
   Document compiled `{r} format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")`.
 format:
   pdf:
@@ -69,7 +69,7 @@ print_interface = function(x, ...)
 
 This document describes replication materials for the article "Self-Tuned
 Rejection Sampling within Gibbs and a Case Study in Small Area Estimation". It
-includes an R package, code for two simulations, and two data analysis.
+includes an R package, code for the two simulations, and two data analysis.
 
 @sec-outline presents an outline of the contents of the repo. @sec-setup
 describes setup to run the replication materials. @sec-package gives an
@@ -97,14 +97,12 @@ Here is an outline of the contents of the `saevws-replication` repo.
 - `saevws`: an R package with the Gibbs samplers and supporting functions.
   See @sec-package of the present document.
 - `unmatch`: materials for the "Unmatched SAE" model on @You-Rao-2002.
-	+ `01-generated`: analysis based on a generated dataset.
+	+ `01-generated`: analysis based on the generated dataset.
 	+ `data`: a generated dataset based on a model in @You-Rao-2002.
-
-**TBD:** consider moving the unused code and data out of this repo.
 
 # Setup {#sec-setup}
 
-A working installation of R [@Rcore2026] is required with the following
+A working installation of R [@Rcore-2026] is required with the following
 packages (and their dependencies).
 
 - `coda` [@coda]
@@ -257,7 +255,7 @@ sessionInfo()
 An Adaptive Metropolis-Hastings (AMH) method is implemented in our studies for comparison. The particular variant ("SCAM") is from Section 3.1 of @Roberts-Rosenthal-2009 which is based on @Haario-Saksman-Tamminen-2005. The objective is to draw $\vec{X} = (X_1, \ldots, X_k)$ from target $\pi$. A chain $\vec{x}^{(r)}$, $r = 0, 1, 2, \ldots$, produced by an MCMC method can approximate such draws. Using a Metropolis-within-Gibbs approach to draw component $x_j$, an "optimal" proposal distribution for Metropolis sampling would be $X_j^* \sim \text{N}\big( x_j^{(r)}, (2.38)^2 \cdot \text{Var}_{\pi}(X_j) \big)$. We can then accept $x_j^{(r+1)} = x_j^*$ with probability
 <!-- -->
 \begin{align*}
-\alpha(x_j^*, x_j^{(r)}, \vec{x}_{\setminus j}) =
+\alpha(x_j^*, x_j^{(r)} \mid x_1, \ldots x_{j-1}, x_{j+1}, \ldots, x_k) =
 \min\left\{ 1,
 \frac {
 \pi(x_1, \ldots, x_{j-1}, x_j^*, x_{j+1}, \ldots, x_k)
@@ -267,7 +265,7 @@ An Adaptive Metropolis-Hastings (AMH) method is implemented in our studies for c
 \right\},
 \end{align*}
 <!-- -->
-where $\vec{x}_{\setminus j}$ denotes the last draws of components $\ell \neq j$ from the chain, and let $x_j^{(r+1)} = x_j^{(r)}$ with the remaining probability. The constant $2.38$ arises in MCMC theory. The variance $\text{Var}_{\pi}(X_j)$ is computed under the target and therefore is generally not accessible except through approximation by an MCMC method. The objective of SCAM is to build up an approximation to $\text{Var}_{\pi}(X_j)$ within the MCMC. @Roberts-Rosenthal-2009 use SCAM with the proposal $\text{N}(x_j^{(r)}, v_j^{(r)})$, where
+and let $x_j^{(r+1)} = x_j^{(r)}$ with the remaining probability. The constant $2.38$ arises in MCMC theory. The variance $\text{Var}_{\pi}(X_j)$ is computed under the target and therefore is generally not accessible except through approximation by an MCMC method. The objective of SCAM is to build up an approximation to $\text{Var}_{\pi}(X_j)$ within the MCMC. @Roberts-Rosenthal-2009 use SCAM with the proposal $\text{N}(x_j^{(r)}, v_j^{(r)})$, where
 <!-- -->
 \begin{align*}
 v_j^{(r)} =
