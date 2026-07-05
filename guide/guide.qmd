@@ -1,0 +1,356 @@
+---
+title: |
+  Self-Tuned Rejection Sampling within Gibbs and a Case Study in Small Area
+  Estimation
+subtitle: Guide to Replication Materials
+author: Andrew M. Raim$^*$, Kyle M. Irimata$^*$, and James A. Livsey$^\dagger$
+date: now
+date-format: "YYYY-MM-DD"
+thanks: |
+  $^*$Center for Statistical Research and Methodology, U.S. Census Bureau.
+  $^\dagger$Department of Biostatistics, University of Buffalo.
+  `andrew.raim@census.gov`, `kyle.m.irimata@census.gov`, `jamesliv@buffalo.edu`.
+  Document compiled `{r} format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")`.
+format:
+  pdf:
+    fontsize: 10pt
+    indent: false
+    toc: false
+    number-sections: true
+    colorlinks: true
+    link-citations: true
+    prompt: false
+    include-in-header:
+      text: |
+        \usepackage{common}
+editor_options: 
+  chunk_output_type: console
+pdf-engine: pdflatex
+geometry:
+  - left=0.75in
+  - right=0.75in
+  - top=0.75in
+  - bottom=1.00in
+code-block-bg: "#FAFAFA"
+code-block-border-left: "#C2E3FF"
+bibliography: references.bib
+---
+
+```{r}
+#| echo: false
+#| message: false
+set.seed(1234)
+library(saevws)
+
+print_interface = function(x, ...)
+{
+	# 0. Convert `...` to a list. If empty, add a default.
+    # 1. Get the interface of the function in a printable form; avoid line
+    #    breaks.
+    # 2. Replace the token 'function ' with the name of the function.
+    # 3. Call str_wrap to handle any wrapping if the line is long.
+    # 4. Print the wrapped line and replace newline characters with actual
+    #    newlines.
+
+	vargs = list(...)
+	if (length(vargs) == 0) { vargs = list(exdent = 4) }
+	desc = str(x, give.attr = F, width = Inf, strict.width = "wrap") |>
+		capture.output()
+	vargs$string = sub(
+		pattern = "function ",
+		replacement = deparse(substitute(x)),
+		x = desc,
+		fixed = TRUE)
+	do.call(stringr::str_wrap, vargs) |> cat(collapse = "\n")
+}
+```
+
+# Introduction {#sec-intro}
+
+This document describes replication materials for the article "Self-Tuned
+Rejection Sampling within Gibbs and a Case Study in Small Area Estimation". It
+includes an R package, code for the two simulations, and two data analysis.
+
+@sec-outline presents an outline of the contents of the repo. @sec-setup
+describes setup to run the replication materials. @sec-package gives an
+overview of the `saevws` package, including installation and basic usage.
+@sec-scripts lists the scripts used for the conditional simulation, posterior
+simulation, and data analysis. @sec-session gives a comprehensive list of
+packages and versions used in the computational studies, for reproducibility.
+@sec-amh provides from details about the adaptive Metropolis-Hastings algorithm
+used for comparison in the data analyses.
+
+# Outline {#sec-outline}
+
+Here is an outline of the contents of the `saevws-replication` repo.
+
+- `guide`: contains the present document and the source files used to generate
+  it.
+- `joint`: materials for the "Joint SAE model" based on @You-2021.
+	+ `01-sim-cond`: simulation generating from a single conditional of the SAE
+	  model under consideration.
+	+ `02-sim-post`: simulation generating from the posterior of the SAE model
+	  under consideration.
+	+ `03-sae`: data analysis with the SAIPE dataset.
+	+ `data`: the SAIPE dataset and codes / inputs to assemble it.
+	+ `shared`: defines R functions used in several seconds of 
+- `saevws`: an R package with the Gibbs samplers and supporting functions.
+  See @sec-package of the present document.
+- `unmatch`: materials for the "Unmatched SAE" model on @You-Rao-2002.
+	+ `01-generated`: analysis based on the generated dataset.
+	+ `data`: a generated dataset based on a model in @You-Rao-2002.
+
+# Setup {#sec-setup}
+
+A working installation of R [@Rcore-2026] is required with the following
+packages (and their dependencies).
+
+- `coda` [@coda]
+- `jsonlite` [@jsonlite]
+- `knitr` [@knitr]
+- `mcmcse` [@mcmcse]
+- `Rcpp` [@Rcpp],
+- `statmod` [@statmod]
+- `tidyverse` [@tidyverse],
+- `xtable` [@xtable]
+
+The above packages are available on CRAN at the time of this writing.
+Additionally, development versions of the `fntl` [@fntl] and `vws` [@vws]
+packages are needed. Here we demonstrate installing them using the `pak`
+package [@pak].
+
+```{r}
+#| eval: false
+#| prompt: true
+pak::pkg_install("andrewraim/fntl@v0.1.3-saevws")
+pak::pkg_install("andrewraim/vws@v0.3.1-saevws")
+```
+
+The `saevws` package included in the repo can now be installed. The following
+uses the `pak` package to accomplish this. (The placeholder `/path/to/` should
+be replaced with the actual path.)
+
+```{r}
+#| eval: false
+#| prompt: true
+pak::pkg_install("/path/to/saevws")
+```
+
+# `saevws` R Package {#sec-package}
+
+The `saevws` package exports several functions for use in R. The primary
+functions are described here. See the associated manual page for each function
+for more information.
+
+The following are for the Gibbs sampler in the Joint SAE example.
+
+::: {.callout-note appearance="minimal"}
+```{r}
+#| echo: false
+print_interface(gibbs_joint)
+print_interface(control_joint)
+print_interface(init_joint)
+print_interface(fixed_joint)
+```
+:::
+
+The following are for the Gibbs sampler in the Unmatched SAE example.
+
+::: {.callout-note appearance="minimal"}
+```{r}
+#| echo: false
+print_interface(gibbs_unmatch)
+print_interface(control_unmatch)
+print_interface(init_unmatch)
+print_interface(fixed_unmatch)
+```
+:::
+
+The following is used to specify the within-Gibbs sampling method in both
+examples.
+
+::: {.callout-note appearance="minimal"}
+```{r}
+#| echo: false
+print_interface(control_inner)
+```
+:::
+
+These functions are used for plotting.
+
+::: {.callout-note appearance="minimal"}
+```{r}
+#| echo: false
+print_interface(traceplots)
+print_interface(plot_comps)
+print_interface(plot_rejects)
+print_interface(plot_tunes)
+```
+:::
+
+# Scripts to Reproduce Results in the Article {#sec-scripts}
+
+The following codes in `joint/01-sim-cond` produce the conditional simulation study in Section 6.1 of the article.
+
+- `imh.R`: Simulations with IMH.
+- `vws.R`: Simulations with VWS.
+
+The following codes in `joint/02-sim-post` produce the posterior simulation study in Section 6.2 of the article.
+
+- `gen.R`: Generate folder structure for the study. Each level of the study is
+  placed into a separate folder.
+- `sim.R`: Run one level of the study.
+- `analyze.R`: Analyze the results from the completed study and produce 
+  summaries.
+
+The `joint/03-sae` folder contains a single script `saipe.R` for the analysis in Section 7 of the article.
+
+The `joint/data` folder contains the SAIPE dataset and scripts and inputs to
+construct it.
+
+- `saipe.csv`: the prepared dataset.
+- `cntysnap.csv`: Supplemental Nutrition Assistance Program (SNAP) data for
+  2022, to be used as a covariate with 2023 SAIPE data.
+- `co-est2023-alldata.csv`: 2023 population estimates from the U.S. Census
+  Bureau's Population Estimates Program. The data may be obtained from the
+  Census Bureau [website][pep].
+- `build-data.R`: Code to construct the dataset `saipe.csv`.
+
+The `unmatch/01-generated` folder contains a single `unmatch.R` for the analysis in the supplement.
+
+The `unmatch/data` folder contains the (simulated) dataset for the Unmatched
+SAE model, along with scripts and inputs to construct it.
+
+- `build-data.R`: Code to construct the dataset `unmatch.csv`.
+- `unmatch.csv`: the prepared dataset.
+- `mu-true.csv`: the values of the latent variable used to generate the data.
+
+[pep]: https://www.census.gov/data/datasets/time-series/demo/popest/2020s-counties-total.html
+
+# Session Information {#sec-session}
+
+Results in the paper were produced in an R environment with the following
+packages and versions.
+
+```{r}
+#| eval: false
+#| message: false
+#| warning: false
+library(coda)
+library(jsonlite)
+library(knitr)
+library(mcmcse)
+library(Rcpp)
+library(statmod)
+library(tidyverse)
+library(xtable)
+library(vws)
+```
+
+```{r}
+sessionInfo()
+```
+
+# Adaptive Metropolis-Hastings Algorithm {#sec-amh}
+
+An Adaptive Metropolis-Hastings (AMH) method is implemented in our studies for comparison. The particular variant ("SCAM") is from Section 3.1 of @Roberts-Rosenthal-2009 which is based on @Haario-Saksman-Tamminen-2005. The objective is to draw $\vec{X} = (X_1, \ldots, X_k)$ from target $\pi$. A chain $\vec{x}^{(r)}$, $r = 0, 1, 2, \ldots$, produced by an MCMC method can approximate such draws. Using a Metropolis-within-Gibbs approach to draw component $x_j$, an "optimal" proposal distribution for Metropolis sampling would be $X_j^* \sim \text{N}\big( x_j^{(r)}, (2.38)^2 \cdot \text{Var}_{\pi}(X_j) \big)$. We can then accept $x_j^{(r+1)} = x_j^*$ with probability
+<!-- -->
+\begin{align*}
+\alpha(x_j^*, x_j^{(r)} \mid x_1, \ldots x_{j-1}, x_{j+1}, \ldots, x_k) =
+\min\left\{ 1,
+\frac {
+\pi(x_1, \ldots, x_{j-1}, x_j^*, x_{j+1}, \ldots, x_k)
+}{
+\pi(x_1, \ldots, x_{j-1}, x_j^{(r)}, x_{j+1}, \ldots, x_k)
+}
+\right\},
+\end{align*}
+<!-- -->
+and let $x_j^{(r+1)} = x_j^{(r)}$ with the remaining probability. The constant $2.38$ arises in MCMC theory. The variance $\text{Var}_{\pi}(X_j)$ is computed under the target and therefore is generally not accessible except through approximation by an MCMC method. The objective of SCAM is to build up an approximation to $\text{Var}_{\pi}(X_j)$ within the MCMC. @Roberts-Rosenthal-2009 use SCAM with the proposal $\text{N}(x_j^{(r)}, v_j^{(r)})$, where
+<!-- -->
+\begin{align*}
+v_j^{(r)} =
+\begin{cases}
+v_j^{(0)}, & \text{$r \leq r_0$}, \\
+s^2 \{ \tilde{\text{V}}_j^{(r)} + \epsilon \}, & \text{$r > r_0$}, \\
+\end{cases}
+\end{align*}
+<!-- -->
+with $\epsilon$ chosen to be a small positive number, $s = 2.4$ as a rounded version of the 2.38 optimality constant, initial value $v_j^{(0)}$, and empirical variance
+<!-- -->
+\begin{align*}
+\tilde{\text{V}}_j^{(r)} =
+\frac{1}{r-1} \sum_{i=0}^{r-1} (x_j^{(i)} - \bar{x}_j^{(r)})^2,
+\end{align*}
+<!-- -->
+with associated mean
+<!-- -->
+\begin{math}
+\bar{x}_j^{(r)} = \frac{1}{r} \sum_{i=0}^{r-1} x_j^{(i)}.
+\end{math}
+<!-- -->
+Once the element $x_j^{(r)}$ of the chain is determined at the end of step $r$, the empirical mean and variance can be updated using the recursions so that it is not necessary to retain all of the draws:
+<!-- -->
+\begin{align*}
+\bar{x}_j^{(r+1)} =
+\begin{cases}
+x_j^{(0)}, & \text{$r = 0$}, \\
+\frac{1}{r+1} \{r \bar{x}_j^{(r)} + x_j^{(r)} \}, & \text{$r > 0$}, \\
+\end{cases}
+\end{align*}
+<!-- -->
+and
+<!-- -->
+\begin{align*}
+\tilde{\text{V}}_j^{(r+1)} =
+\begin{cases}
+\{ x_j^{(0)} - x_j^{(1)} \}^2 / 2, & \text{$r = 1$}, \\
+\frac{r-1}{r} \tilde{\text{V}}_j^{(r)}
++ \{ \bar{x}_j^{(r)} \}^2
++ \frac{1}{r} \{ x_j^{(r+1)} \}^2
+- \frac{r+1}{r} \{ \bar{x}_j^{(r+1)} \}^2, & \text{$r > 1$}, \\
+\end{cases}
+\end{align*}
+
+For the joint SAE application [@You-2021], we use an exponential transformation to generate positive proposal values from the normal proposal distribution for $\sigma_i^2$. This results in the inclusion of a Jacobian term in the Metropolis ratio as follows. Let $\phi^*$ be a draw from proposal $\text{N}(\phi^{(r)}, v_i^{(r)})$ with $\phi^{(r)} = \log \sigma_i^{2{(r)}}$. The density with respect to $\phi^*$ (with proportionality constant omitted) can be obtained by transformation as
+<!-- -->
+\begin{align*}
+f(\exp(\phi^*) \mid \rest) &\propto
+f_\text{IG}(\exp(\phi^*) \mid \kappa_i, \lambda_i)
+f_\text{LN}(\exp(\phi^*) \mid \mu_i, \tau^2)
+\exp(\phi^*),
+\end{align*}
+<!-- -->
+where the term $e^\phi = \frac{d}{d \phi} e^\phi$ is from the Jacobian of the transformation from $\sigma_i^2$ to $\phi$. The acceptance ratio for Metropolis-Hastings is then
+<!-- -->
+\begin{align}
+\varpi_i^{(r)}
+&= \min\left\{ 1, \frac{
+f_\text{IG}(\exp(\phi^*) \mid \kappa_i, \lambda_i) \cdot
+f_\text{LN}(\exp(\phi^*) \mid \mu_i, \tau^2) \cdot
+\exp(\phi^*)
+}{
+f_\text{IG}(\exp(\phi^{(r)}) \mid \kappa_i, \lambda_i) \cdot
+f_\text{LN}(\exp(\phi^{(r)}) \mid \mu_i, \tau^2) \cdot
+\exp(\phi^{(r)})
+} \right\}.
+\label{eqn:joint-ratio}
+\end{align}
+<!-- -->
+For the unmatched SAE application [@You-Rao-2002], we draw proposal variate $\mu_i^* \sim \text{N}(\mu^{(r)}, v_i^{(r)})$ and accept with probability
+<!-- -->
+\begin{align}
+\varpi_i^{(r)}
+&= \min\left\{ 1, \frac{
+f_\text{LN}(\mu_i^* \mid \vec{x}_i^\top \vec{\beta}, \tau^2) \cdot
+f_\text{N}(\mu_i^* \mid y_i, \sigma_i^2)
+}{
+f_\text{LN}(\mu^{(r)} \mid \vec{x}_i^\top \vec{\beta}, \tau^2) \cdot
+f_\text{N}(\mu^{(r)} \mid y_i, \sigma_i^2)
+} \right\}.
+\label{eqn:unmatch-ratio}
+\end{align}
+<!-- -->
+Note that the Gaussian proposal cancels from both \eqref{eqn:joint-ratio} and \eqref{eqn:unmatch-ratio} because of symmetry. 
+
+# References {-}

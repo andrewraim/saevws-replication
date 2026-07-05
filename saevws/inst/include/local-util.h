@@ -1,8 +1,38 @@
-#ifndef LOCAL_UTIL_H
-#define LOCAL_UTIL_H
+#ifndef SAEVWS_LOCAL_UTIL_H
+#define SAEVWS_LOCAL_UTIL_H
 
 #include <RcppArmadillo.h>
 #include "vws.h"
+
+/*
+* Get resident memory for the current process, for Linux-based systems. The
+* code was adapted from: <https://stackoverflow.com/a/14927379>
+*/
+inline size_t rss_kb()
+{
+#if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+	FILE* fp = NULL;
+	fp = fopen( "/proc/self/statm", "r" );
+
+	if (fp == NULL) {
+		Rcpp::stop("Could not get RSS");
+	}
+
+	long rss = 0L;
+	if (fscanf(fp, "%*s%ld", &rss) != 1)
+	{
+		fclose(fp);
+		Rcpp::stop("Could not get RSS");
+	}
+
+	fclose(fp);
+	size_t out = size_t(rss) * size_t(sysconf(_SC_PAGESIZE)) / 1024;
+	return out;
+#else
+	// In this case, just return a zero
+	return 0L;
+#endif
+}
 
 inline void stopifnot(bool cond, const char* fmt, ...)
 {
@@ -19,12 +49,17 @@ inline void stopifnot(bool cond, const char* fmt, ...)
 	Rcpp::stop(std::string(msg) + " is not TRUE");
 }
 
-/*
 inline void logger(const char* fmt, ...)
 {
-	const Rcpp::Datetime& dt = Rcpp::Datetime(time(NULL));
+	// Get the current time in the local time zone
+	std::time_t raw = std::time(nullptr);
+	std::tm* local = std::localtime(&raw);
 
-	// Insert placeholders into formatted string; see
+	// Write formatted time to a string
+	char buffer[64];
+	strftime(buffer, 64, "%Y-%m-%d %H:%M:%S", local);
+
+	// Insert "..." placeholders into format string for message; see
 	// <https://stackoverflow.com/q/1056411>
 	char msg[256];
 	va_list args;
@@ -32,10 +67,9 @@ inline void logger(const char* fmt, ...)
 	vsnprintf(msg, 255, fmt, args);
 	va_end(args);
 
-	Rprintf("%04d:%02d:%02d %02d:%02d:%02d - %s", dt.getYear(), dt.getMonth(),
-		dt.getDay(), dt.getHours(), dt.getMinutes(), dt.getSeconds(), msg);
+	// Print the formatted message with timestamp
+	Rprintf("%s - %s", buffer, msg);
 }
-*/
 
 inline arma::mat crossprod(const arma::mat& X)
 {

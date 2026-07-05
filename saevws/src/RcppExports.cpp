@@ -12,9 +12,9 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// gibbs_cpp
-Rcpp::List gibbs_cpp(const arma::vec& y, const arma::vec& s2, const arma::mat& X, const arma::mat& Z, const arma::vec& df, const Rcpp::List& init, const Rcpp::List& control, const Rcpp::List& fixed);
-RcppExport SEXP _saevws_gibbs_cpp(SEXP ySEXP, SEXP s2SEXP, SEXP XSEXP, SEXP ZSEXP, SEXP dfSEXP, SEXP initSEXP, SEXP controlSEXP, SEXP fixedSEXP) {
+// gibbs_joint_cpp
+Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2, const arma::mat& X, const arma::mat& Z, const arma::vec& df, const Rcpp::List& init, const Rcpp::List& control, const Rcpp::List& fixed);
+RcppExport SEXP _saevws_gibbs_joint_cpp(SEXP ySEXP, SEXP s2SEXP, SEXP XSEXP, SEXP ZSEXP, SEXP dfSEXP, SEXP initSEXP, SEXP controlSEXP, SEXP fixedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -26,13 +26,30 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const Rcpp::List& >::type init(initSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type control(controlSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type fixed(fixedSEXP);
-    rcpp_result_gen = Rcpp::wrap(gibbs_cpp(y, s2, X, Z, df, init, control, fixed));
+    rcpp_result_gen = Rcpp::wrap(gibbs_joint_cpp(y, s2, X, Z, df, init, control, fixed));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gibbs_unmatch_cpp
+Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma, const arma::mat& X, const Rcpp::List& init, const Rcpp::List& control, const Rcpp::List& fixed);
+RcppExport SEXP _saevws_gibbs_unmatch_cpp(SEXP ySEXP, SEXP sigmaSEXP, SEXP XSEXP, SEXP initSEXP, SEXP controlSEXP, SEXP fixedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type init(initSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type control(controlSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type fixed(fixedSEXP);
+    rcpp_result_gen = Rcpp::wrap(gibbs_unmatch_cpp(y, sigma, X, init, control, fixed));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_saevws_gibbs_cpp", (DL_FUNC) &_saevws_gibbs_cpp, 8},
+    {"_saevws_gibbs_joint_cpp", (DL_FUNC) &_saevws_gibbs_joint_cpp, 8},
+    {"_saevws_gibbs_unmatch_cpp", (DL_FUNC) &_saevws_gibbs_unmatch_cpp, 6},
     {NULL, NULL, 0}
 };
 

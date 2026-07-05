@@ -1,10 +1,10 @@
 #ifndef SAEVWS_H
 #define SAEVWS_H
 
+#include "arms-joint-functor.h"
+#include "arms-unmatch-functor.h"
 #include "local-util.h"
-#include "ConstSAEMajorizer.h"
-#include "VWSStepOutput.h"
-#include "vws-step-basic.h"
-#include "vws-step-tune.h"
+#include "joint-sae-proposal.h"
+#include "unmatch-sae-proposal.h"
 
 #endif

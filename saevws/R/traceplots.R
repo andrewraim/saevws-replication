@@ -46,4 +46,3 @@ traceplots = function(x, xlab = "")
 
 	return(out)
 }
-
