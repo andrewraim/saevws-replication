@@ -20,3 +20,6 @@ data.frame(mu = mu_true, y = y) %>%
 
 unmatch = tibble(y, sigma, x = X[,2])
 write_csv(unmatch, file = "unmatch.csv")
+
+data.frame(mu = mu_true) %>%
+	write_csv(file = "mu-true.csv")

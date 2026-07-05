@@ -20,7 +20,7 @@ tau_levels = c(0.5, 1.0)
 tbl = expand.grid(kappa = kappa_levels, tau = tau_levels,
 	tol_suff = tol_suff_levels, tol_merge = tol_merge_levels)
 lb_list = list()
-knots_list = list()
+regions_list = list()
 elapsed_list = list()
 rejections_list = list()
 
@@ -35,7 +35,7 @@ for (s in seq_len(S)) {
 	tol_merge = tbl$tol_merge[s]
 
 	res_lb = matrix(NA, R, n)
-	res_knots = matrix(NA, R, n)
+	res_regions = matrix(NA, R, n)
 	res_elapsed = numeric(R)
 	res_rejects = numeric(R)
 
@@ -46,16 +46,16 @@ for (s in seq_len(S)) {
 		out = r_target(n, mu, tau, kappa, lambda, tol_suff, tol_merge, max_rejects)
 		et = Sys.time()
 		res_lb[r,] = out$log_bounds
-		res_knots[r,] = out$regions
+		res_regions[r,] = out$regions
 		res_elapsed[r] = as.numeric(et - st, units = "secs")
 		res_rejects[r] = sum(out$rejects)
 	}
 
 	lb_med = apply(res_lb, 2, quantile, probs = 0.5)
-	knots_med = apply(res_knots, 2, quantile, probs = 0.5)
+	regions_med = apply(res_regions, 2, quantile, probs = 0.5)
 
 	lb_list[[s]] = lb_med
-	knots_list[[s]] = knots_med
+	regions_list[[s]] = regions_med
 	elapsed_list[[s]] = sum(res_elapsed)
 	rejections_list[[s]] = sum(res_rejects)
 }
@@ -99,7 +99,7 @@ for (idx2 in seq_along(tol_merge_levels)) {
 
 	g2 = ggplot() +
 		xlab("Iteration") +
-		ylab("Number of Knots") +
+		ylab("Number of Regions") +
 		scale_y_continuous(n.breaks = 6) +
 		theme_light()
 
@@ -121,14 +121,14 @@ for (idx2 in seq_along(tol_merge_levels)) {
 			geom_point(data = df |> filter(row_number() %% 3 == 0),
 				aes(iter, x), pch = ltype)
 
-		df = data.frame(iter = seq_len(n), x = knots_list[[idx_row]])
+		df = data.frame(iter = seq_len(n), x = regions_list[[idx_row]])
 		g2 = g2 +
 			geom_line(data = df, aes(iter, x)) +
 			geom_point(data = df |> filter(row_number() %% 3 == 0),
 				aes(iter, x), pch = ltype)
 
 		# Print this to double check which series are which in the results
-		printf("kappa %0.0f  tau %0.1f  tol1 %0.2f  tol2 %0.3f  ltype %d  maxknots %d\n",
+		printf("kappa %0.0f  tau %0.1f  tol1 %0.2f  tol2 %0.3f  ltype %d  maxregions %d\n",
 			kappa, tau, tol_suff, tol_merge, ltype, max(df$x))
 
 	}
@@ -136,7 +136,7 @@ for (idx2 in seq_along(tol_merge_levels)) {
 
 	sprintf("bound-%d-%d.pdf", idx1, idx2) |>
 		ggsave(plot = g1, width = 3, height = 2)
-	sprintf("knots-%d-%d.pdf", idx1, idx2) |>
+	sprintf("regions-%d-%d.pdf", idx1, idx2) |>
 		ggsave(plot = g2, width = 3, height = 2)
 }
 }

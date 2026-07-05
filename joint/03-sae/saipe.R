@@ -305,6 +305,9 @@ print(fh_out)
 
 save.image("results.Rdata")
 
+# Set another seed before preparing results
+set.seed(1234)
+
 # ----- Additional Plots -----
 
 # Dot plot of joint sampling variances versus estimated
@@ -542,6 +545,62 @@ for (l in 1:nrow(tol_levels)) {
 	ggsave(ff, g, width = 3, height = 2)
 }
 
+# We now consider credible intervals for sigma2 and their coverage of the
+# observed s2 (because a true sigma2 does not exist in a data analysis). For
+# those intervals that changed from "Covered" to "Not Covered" and vice versa,
+# what were their associated ESS values under IMH? Does it look like the mixing
+# might have been a culprit for their coverage status changing?
+
+df_covg = data.frame(lo_imh = sigma2_ci_imh[,1], hi_imh = sigma2_ci_imh[,2]) %>%
+	mutate(iter = row_number()) %>%
+	add_column(lo_vws = sigma2_ci_vws[,1]) %>%
+	add_column(hi_vws = sigma2_ci_vws[,2]) %>%
+	add_column(obs = s2) %>%
+	add_column(ess_imh = ess_imh_sigma2) %>%
+	mutate(covg_imh = as.logical(lo_imh <= obs & obs <= hi_imh)) %>%
+	mutate(covg_vws = as.logical(lo_vws <= obs & obs <= hi_vws)) %>%
+	mutate(to_covg = (!covg_imh & covg_vws)) %>%
+	mutate(to_uncovg = (covg_imh & !covg_vws)) %>%
+	mutate(group = case_when(
+		to_covg ~ "A",
+		to_uncovg ~ "B",
+		TRUE ~ "0")
+	)
+
+g = df_covg %>%
+	filter(to_uncovg == TRUE) %>%
+	mutate(lo_delta = lo_vws - lo_imh) %>%
+	mutate(hi_delta = hi_vws - hi_imh) %>%
+	mutate(label = ifelse(abs(lo_delta) > 0.0005 | abs(hi_delta) > 0.0005,
+		round(ess_imh), "")) %>%
+	ggplot() +
+	geom_point(aes(x = lo_delta, y = hi_delta)) +
+	geom_text(aes(x = lo_delta, y = hi_delta, label = label),
+		size = 3.0, hjust = 0, nudge_x = 0.00005) +
+	xlab("Change in Lower Bound") +
+	ylab("Change in Upper Bound") +
+	scale_x_continuous(n.breaks = 10) +
+	scale_y_continuous(n.breaks = 10) +
+	theme_minimal()
+ggsave("to-uncovg.pdf", g, width = 7, height = 5)
+
+g = df_covg %>%
+	filter(to_covg == TRUE) %>%
+	mutate(lo_delta = lo_vws - lo_imh) %>%
+	mutate(hi_delta = hi_vws - hi_imh) %>%
+	mutate(label = ifelse(abs(lo_delta) > 0.0005 | abs(hi_delta) > 0.0005,
+		round(ess_imh), "")) %>%
+	ggplot() +
+	geom_point(aes(x = lo_delta, y = hi_delta)) +
+	geom_text(aes(x = lo_delta, y = hi_delta, label = label),
+		size = 3.0, hjust = 0, nudge_x = 0.00005) +
+	xlab("Change in Lower Bound") +
+	ylab("Change in Upper Bound") +
+	scale_x_continuous(n.breaks = 10) +
+	scale_y_continuous(n.breaks = 10) +
+	theme_minimal()
+ggsave("to-covg.pdf", g, width = 7, height = 5)
+
 # ----- Tables to summarize MCMC results -----
 tbl_ess %>%
 	mutate(tol_merge = format(tol_merge, scientific = FALSE)) %>%
@@ -616,52 +675,3 @@ tribble(
 	vws2_out[[3]]$inner_method, tol_levels$tol_suff[3], tol_levels$tol_merge[3], TRUE, max(vws2_out[[3]]$mem),
 	vws2_out[[4]]$inner_method, tol_levels$tol_suff[4], tol_levels$tol_merge[4], TRUE, max(vws2_out[[4]]$mem),
 ) %>% mutate(mem = mem / 1024)
-
-# ----- Experimental: Gelman-Rubin Diagnostic -----
-# Run three additional chains with IMH and then diagnose the four together.
-imh2_out = gibbs_joint(y, s2, X, Z, df, init, control)
-imh3_out = gibbs_joint(y, s2, X, Z, df, init, control)
-imh4_out = gibbs_joint(y, s2, X, Z, df, init, control)
-
-# TBD: can we get the statistic for all m sigma2 entries, or is that too much?
-ess_sigma2 = ess(imh_out$sigma2)
-lowest_imh = order(ess_sigma2)[1:3]
-# lowest_imh = 1:m
-
-# Try Gelman-Rubin with coda package on IMH.
-mcmc_list = mcmc.list(
-	as.mcmc(imh_out$sigma2[,lowest_imh]),
-	as.mcmc(imh2_out$sigma2[,lowest_imh]),
-	as.mcmc(imh3_out$sigma2[,lowest_imh]),
-	as.mcmc(imh4_out$sigma2[,lowest_imh])
-)
-gr_imh = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
-
-# Try Gelman-Rubin with coda package on VWS. Base it on the four runs of VWS1.
-# It shouldn't matter that they are based on different tunings of the rejection
-# sampler.
-
-mcmc_list = mcmc.list(
-	as.mcmc(vws2_out[[1]]$sigma2[,lowest_imh]),
-	as.mcmc(vws2_out[[2]]$sigma2[,lowest_imh]),
-	as.mcmc(vws2_out[[3]]$sigma2[,lowest_imh]),
-	as.mcmc(vws2_out[[4]]$sigma2[,lowest_imh])
-)
-gr_vws = gelman.diag(mcmc_list, confidence = 0.95, autoburnin = FALSE)
-
-
-# ----- Experimental: Geweke Diagnostic -----
-# TBD: Geweke diagnostic seems about to detect the worst mixing chains. But how
-# to summarize it in a table for results?
-
-z_geweke = geweke(imh_out$sigma2)
-pval = pnorm(2 * abs(z_geweke), lower.tail = FALSE)
-idx = order(pval)[1:6]
-pval[idx]
-plot(imh_out$sigma2[,idx[6]], type = "l")
-
-plot(density(z_geweke))
-curve(dnorm, add = TRUE, lty = 2)
-sum(abs(z_geweke) > 4)
-sum(z_geweke < -3.5)
-

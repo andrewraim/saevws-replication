@@ -242,12 +242,15 @@ for (l in seq_len(nrow(tol_levels)))
 
 save.image("results.Rdata")
 
+# Set another seed before preparing results
+set.seed(1234)
+
 # ----- Additional Plots -----
 df_plot = data.frame(
 		imh = ess(imh_out$mu),
 		arms = ess(arms_out$mu),
 		amh = ess(amh_out$mu),
-		vws = ess(vws1_out[[4]]$mu)) %>%
+		vws = ess(vws2_out[[4]]$mu)) %>%
 	mutate(iter = row_number())
 df_points = data.frame(x = c(500, 1000, 1500)) %>%
 	mutate(imh = ecdf(df_plot$imh)(x)) %>%
@@ -273,7 +276,7 @@ ggsave("mu-ess-ecdf.pdf", g, width = 4, height = 3)
 # and 3 counties with worst VWS chains
 ess_imh = ess(imh_out$mu)
 ess_imh[is.na(ess_imh)] = 0
-ess_vws = ess(vws1_out[[4]]$mu)
+ess_vws = ess(vws2_out[[4]]$mu)
 lowest_imh = order(ess_imh)[1:3]
 lowest_vws = order(ess_vws)[1:3]
 plot_ess = c(lowest_imh, lowest_vws)
@@ -283,7 +286,7 @@ for (ii in 1:length(plot_ess)) {
 
 	g = data.frame(
 			imh = imh_out$mu[,idx],
-			vws = vws1_out[[4]]$mu[,idx]) %>%
+			vws = vws2_out[[4]]$mu[,idx]) %>%
 		mutate(x = row_number()) %>%
 		ggplot() +
 		geom_line(aes(x=x, y=vws), color = "red2", alpha = 0.4) +
@@ -338,6 +341,75 @@ for (l in 1:nrow(tol_levels)) {
 	ggsave(ff, g, width = 3, height = 2)
 }
 
+# We now consider credible intervals for sigma2 and their coverage of the
+# observed s2 (because a true sigma2 does not exist in a data analysis). For
+# those intervals that changed from "Covered" to "Not Covered" and vice versa,
+# what were their associated ESS values under IMH? Does it look like the mixing
+# might have been a culprit for their coverage status changing?
+
+mu_imh = apply(imh_out$mu, 2, mean)
+mu_vws = apply(vws2_out[[4]]$mu, 2, mean)
+mu_sd_imh = apply(imh_out$mu, 2, sd)
+mu_sd_vws = apply(vws2_out[[4]]$mu, 2, sd)
+mu_ci_imh = apply(imh_out$mu, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
+mu_ci_vws = apply(vws2_out[[4]]$mu, 2, quantile, probs = c(alpha/2, 1 - alpha/2)) %>% t()
+mu_width_imh = apply(mu_ci_imh, 1, diff)
+mu_width_vws = apply(mu_ci_vws, 1, diff)
+ess_imh_mu = ess(imh_out$mu)
+ess_imh_mu[is.na(ess_imh_mu)] = 0
+mu_true = read_csv("../data/mu-true.csv") %>% pull(mu)
+
+df_covg = data.frame(lo_imh = mu_ci_imh[,1], hi_imh = mu_ci_imh[,2]) %>%
+	mutate(iter = row_number()) %>%
+	add_column(lo_vws = mu_ci_vws[,1]) %>%
+	add_column(hi_vws = mu_ci_vws[,2]) %>%
+	add_column(obs = mu_true) %>%
+	add_column(ess_imh = ess_imh_mu) %>%
+	mutate(covg_imh = as.logical(lo_imh <= obs & obs <= hi_imh)) %>%
+	mutate(covg_vws = as.logical(lo_vws <= obs & obs <= hi_vws)) %>%
+	mutate(to_covg = (!covg_imh & covg_vws)) %>%
+	mutate(to_uncovg = (covg_imh & !covg_vws)) %>%
+	mutate(group = case_when(
+		to_covg ~ "A",
+		to_uncovg ~ "B",
+		TRUE ~ "0")
+	)
+
+g = df_covg %>%
+	filter(to_uncovg == TRUE) %>%
+	filter(lo_vws - lo_imh < 0.6) %>%
+	mutate(lo_delta = lo_vws - lo_imh) %>%
+	mutate(hi_delta = hi_vws - hi_imh) %>%
+	mutate(label = ifelse(abs(lo_delta) > 0.0 | abs(hi_delta) > 0.0,
+		round(ess_imh), "")) %>%
+	ggplot() +
+	geom_point(aes(x = lo_delta, y = hi_delta)) +
+	geom_text(aes(x = lo_delta, y = hi_delta, label = label),
+		size = 3.0, hjust = 0, nudge_x = 0.0025) +
+	xlab("Change in Lower Bound") +
+	ylab("Change in Upper Bound") +
+	scale_x_continuous(n.breaks = 10) +
+	scale_y_continuous(n.breaks = 10) +
+	theme_minimal()
+ggsave("to-uncovg.pdf", g, width = 7, height = 5)
+
+g = df_covg %>%
+	filter(to_covg == TRUE) %>%
+	mutate(lo_delta = lo_vws - lo_imh) %>%
+	mutate(hi_delta = hi_vws - hi_imh) %>%
+	mutate(label = ifelse(abs(lo_delta) > 2 | abs(hi_delta) > 2,
+		round(ess_imh), "")) %>%
+	ggplot() +
+	geom_point(aes(x = lo_delta, y = hi_delta)) +
+	geom_text(aes(x = lo_delta, y = hi_delta, label = label),
+		size = 3.0, hjust = 0, nudge_x = 0.125) +
+	xlab("Change in Lower Bound") +
+	ylab("Change in Upper Bound") +
+	scale_x_continuous(n.breaks = 10) +
+	scale_y_continuous(n.breaks = 10) +
+	theme_minimal()
+ggsave("to-covg.pdf", g, width = 7, height = 5)
+
 # ----- Tables -----
 tbl_ess %>%
 	mutate(tol_merge = format(tol_merge, scientific = FALSE)) %>%
@@ -355,7 +427,7 @@ tbl_ess %>%
 
 # Summaries of the regression parameters
 xtable(summary(imh_out), digits = 4)
-xtable(summary(vws1_out[[4]]), digits = 4)
+xtable(summary(vws2_out[[4]]), digits = 4)
 
 s_imh = summary(imh_out)
 s_amh = summary(arms_out)

@@ -223,6 +223,7 @@ SAE model, along with scripts and inputs to construct it.
 
 - `build-data.R`: Code to construct the dataset `unmatch.csv`.
 - `unmatch.csv`: the prepared dataset.
+- `mu-true.csv`: the values of the latent variable used to generate the data.
 
 [pep]: https://www.census.gov/data/datasets/time-series/demo/popest/2020s-counties-total.html
 
