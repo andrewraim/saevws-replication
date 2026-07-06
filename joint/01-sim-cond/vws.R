@@ -26,13 +26,15 @@ rejections_list = list()
 
 # ----- Run the study -----
 S = nrow(tbl)
-for (s in seq_len(S)) {
-	logger("Setting %d of %d\n", s, S)
-
+for (s in seq_len(S))
+{
 	kappa = tbl$kappa[s]
 	tau = tbl$tau[s]
 	tol_suff = tbl$tol_suff[s]
 	tol_merge = tbl$tol_merge[s]
+
+	logger("[%d of %d] kappa %d  tau %0.1f  tol_suff %0.2f  tol_merge %0.3f\n",
+		s, S, kappa, tau, tol_suff, tol_merge)
 
 	res_lb = matrix(NA, R, n)
 	res_regions = matrix(NA, R, n)
