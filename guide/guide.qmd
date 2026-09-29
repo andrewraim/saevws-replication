@@ -69,7 +69,7 @@ print_interface = function(x, ...)
 
 This document describes replication materials for the article "Self-Tuned
 Rejection Sampling within Gibbs and a Case Study in Small Area Estimation". It
-includes an R package, code for the two simulations, and two data analysis.
+includes an R package, code for the two simulations, and two data analyses.
 
 @sec-outline presents an outline of the contents of the repo. @sec-setup
 describes setup to run the replication materials. @sec-package gives an
