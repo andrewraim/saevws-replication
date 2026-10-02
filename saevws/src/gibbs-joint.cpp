@@ -70,9 +70,9 @@ Rcpp::List gibbs_joint_cpp(const arma::vec& y, const arma::vec& s2,
 	double avg_sigma2_comps = 0;
 
 	// This is used if vws_method == "vws-tune" or vws_method == "vws-basic"
-    vws::rejection_args args;
-    args.max_rejects = max_rejects;
-    args.report = 1e6;
+	vws::rejection_args args;
+	args.max_rejects = max_rejects;
+	args.report = 1e6;
 	args.tol_suff = tol_suff;
 	args.tol_merge = tol_merge;
 
