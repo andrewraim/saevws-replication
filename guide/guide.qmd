@@ -69,7 +69,7 @@ print_interface = function(x, ...)
 
 This document describes replication materials for the article "Self-Tuned
 Rejection Sampling within Gibbs and a Case Study in Small Area Estimation". It
-includes an R package, code for the two simulations, and two data analysis.
+includes an R package, code for the two simulations, and two data analyses.
 
 @sec-outline presents an outline of the contents of the repo. @sec-setup
 describes setup to run the replication materials. @sec-package gives an
@@ -82,10 +82,9 @@ used for comparison in the data analyses.
 
 # Outline {#sec-outline}
 
-Here is an outline of the contents of the `saevws-replication` repo.
+Here is an outline of the replication materials in the repo.
 
-- `guide`: contains the present document and the source files used to generate
-  it.
+- `guide`: contains the source files used to generate the present document.
 - `joint`: materials for the "Joint SAE model" based on @You-2021.
 	+ `01-sim-cond`: simulation generating from a single conditional of the SAE
 	  model under consideration.
@@ -112,23 +111,15 @@ packages (and their dependencies).
 - `Rcpp` [@Rcpp],
 - `statmod` [@statmod]
 - `tidyverse` [@tidyverse],
-- `xtable` [@xtable]
+- `xtable` [@xtable],
+- `fntl` [@fntl],
+- `vws` [@vws].
 
 The above packages are available on CRAN at the time of this writing.
-Additionally, development versions of the `fntl` [@fntl] and `vws` [@vws]
-packages are needed. Here we demonstrate installing them using the `pak`
-package [@pak].
-
-```{r}
-#| eval: false
-#| prompt: true
-pak::pkg_install("andrewraim/fntl@v0.1.3-saevws")
-pak::pkg_install("andrewraim/vws@v0.3.1-saevws")
-```
-
-The `saevws` package included in the repo can now be installed. The following
-uses the `pak` package to accomplish this. (The placeholder `/path/to/` should
-be replaced with the actual path.)
+The `saevws` package included in the repo can now be installed. 
+Here we demonstrate installing using the `pak` package [@pak]. The following
+uses the `pak` package to accomplish this. (The placeholder `/path/to/saevws`
+should be replaced with the actual path to the folder.)
 
 ```{r}
 #| eval: false
@@ -230,7 +221,7 @@ SAE model, along with scripts and inputs to construct it.
 # Session Information {#sec-session}
 
 Results in the paper were produced in an R environment with the following
-packages and versions.
+packages. (However, package versions will not necessarily match).
 
 ```{r}
 #| eval: false
