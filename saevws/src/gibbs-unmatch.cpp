@@ -60,9 +60,9 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 	double avg_mu_comps = 0;
 
 	// This is used if vws_method == "vws-tune" or vws_method == "vws-basic"
-    vws::rejection_args args;
-    args.max_rejects = max_rejects;
-    args.report = 1e6;
+	vws::rejection_args args;
+	args.max_rejects = max_rejects;
+	args.report = 1e6;
 	args.tol_suff = tol_suff;
 	args.tol_merge = tol_merge;
 
@@ -234,8 +234,8 @@ Rcpp::List gibbs_unmatch_cpp(const arma::vec& y, const arma::vec& sigma,
 				// VWS without tuning using vws package
 				for (unsigned int i = 0; i < m; i++) {
 					unmatch_sae_proposal h(y(i), sigma(i), Xbeta(i), std::sqrt(tau2));
-			    	h.refine(N - 1, tol_suff);
-			    	const auto& vws_out = vws::rejection(h, 1, args);
+					h.refine(N - 1, tol_suff);
+					const auto& vws_out = vws::rejection(h, 1, args);
 					mu(i) = vws_out.draws[0];
 					mu_rejects_areas(i) += vws_out.rejects[0];
 					mu_rejects_hist(rep) += vws_out.rejects[0];
